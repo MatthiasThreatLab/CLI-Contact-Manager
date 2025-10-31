@@ -2,15 +2,19 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define FIRST_NAME_MAX_LENGTH 50
+#define LAST_NAME_MAX_LENGTH 50
+#define EMAIL_MAX_LENGTH 50
+#define PHONE_MAX_LENGTH 10
+#define NOTES_MAX_LENGTH 1023
+
 typedef struct {
     
-    int id;
-    char firstName[50];
-    char lastName[50];
-    char email[50];
-    char phone[10];
-    int size_notes;
-    char notes[1024];
+    char firstName[FIRST_NAME_MAX_LENGTH + 1]; // + 1 to take into account the null terminator '\0'
+    char lastName[LAST_NAME_MAX_LENGTH + 1];
+    char email[EMAIL_MAX_LENGTH + 1];
+    char phone[PHONE_MAX_LENGTH + 1];
+    char notes[NOTES_MAX_LENGTH + 1];
 
 } Contact;
 
@@ -35,10 +39,11 @@ int main() {
 
 int displayAllContacts(FILE* contactFile) {
 
-    char line[1024] = {0};
+    char line[sizeof(Contact)] = {0};
     char* column;
-    Contact currentContact = {0};
+    Contact currentContact;
     int columnCounter = 0;
+    char c;
 
     int numberOfContacts = getNumberOfLines(contactFile);
 
@@ -49,50 +54,42 @@ int displayAllContacts(FILE* contactFile) {
 
     
     while (fgets(line, sizeof(line), contactFile) != NULL) { // loops through each line of the file
-        column = strtok(line, ","); // explode each element of the line
+        currentContact = (Contact){0};
         columnCounter = 0;
-        
-        // Loop through each column
-        while (column != NULL && columnCounter <= 5) {
-            
+
+        int i = 0;
+        while (line[i] != '\0') { // Loop through each character of each line until the null terminator is found
+            c = line[i];
+
+            // if we're not at the notes yet and we find the ',' character, it's a delimiter
+            // so we skip it (i++) and change the column
+            if (columnCounter < 4 && c == ',') {
+                columnCounter++;
+                i++;
+                continue;
+            }
+
+            // add the current character to the right variable of currentContact
             switch (columnCounter) {
                 case 0:
-                    currentContact.id = atoi(column);
+                    strncat(currentContact.firstName, &c, 1);
                     break;
                 case 1:
-                    strcpy(currentContact.firstName, column);
+                    strncat(currentContact.lastName, &c, 1);
                     break;
                 case 2:
-                    strcpy(currentContact.lastName, column);
+                    strncat(currentContact.email, &c, 1);
                     break;
                 case 3:
-                    strcpy(currentContact.email, column);
+                    strncat(currentContact.phone, &c, 1);
                     break;
                 case 4:
-                    strcpy(currentContact.phone, column);
-                    break;
-                case 5:
-                    currentContact.size_notes = atoi(column);
+                    strncat(currentContact.notes, &c, 1);
                     break;
             }
             
-            column = strtok(NULL, ",");
-            columnCounter++;
+            i++; // next character
         }
-
-        // because there could be some potential ',' in the notes, we have to create a new variable to which we will concatenate
-        // the strings that would be exploded by strtok within the notes by ',' characters
-        // works only if notes is the last column of the database
-        notes = calloc(currentContact.size_notes, sizeof(char));
-        while (column != NULL) {
-            
-            strcat(notes, column);
-            
-            column = strtok(NULL, ",");
-        }
-        strcpy(currentContact.notes, notes);
-        free(notes);
-        notes = NULL;
 
         contacts[contactIndex] = currentContact;
         contactIndex++;
@@ -101,8 +98,7 @@ int displayAllContacts(FILE* contactFile) {
     
     for (int i = 0; i < numberOfContacts; i++) {
         
-        printf("ID: %d | First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
-            contacts[i].id,
+        printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
             contacts[i].firstName,
             contacts[i].lastName,
             contacts[i].email,
