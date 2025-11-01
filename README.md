@@ -25,6 +25,7 @@ What are you trying to do today?
 **Challenges:**  
 - Understand how excatly fgets() reads a file, what if the the current line is bigger than the buffer, will I lose information? Probably
 - usage of strtok, to properly read through each line of the database
+- buffer overflow when using strncat()
 
 **Solutions / Insights:**  
 -

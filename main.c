@@ -21,19 +21,91 @@ typedef struct {
 
 int displayAllContacts(FILE* contactFile);
 int getNumberOfLines(FILE* file);
+int addNewContact(FILE* contactFile);
+int displayContact(Contact contact);
 
 int main() {
 
-    FILE* contactFile = fopen("contacts.txt", "r");
+    FILE* contactFile = fopen("contacts.txt", "a+");
 
     if (contactFile == NULL) {
         printf("Could not open the file");
         return 1;
     }
     
-    displayAllContacts(contactFile);
+    addNewContact(contactFile);
+
+    // displayAllContacts(contactFile);
 
     fclose(contactFile);
+
+}
+
+int addNewContact(FILE* contactFile) {
+    /* TO DO:
+        - regex to valid user input for each element of newContact
+    */
+    
+    Contact newContact = {0};
+
+    char firstName[FIRST_NAME_MAX_LENGTH + 2] = ""; // + 2 to take into account the null terminator '\0' and '\n' for user input
+    char lastName[LAST_NAME_MAX_LENGTH + 2] = "";
+    char email[EMAIL_MAX_LENGTH + 2] = "";
+    char phone[PHONE_MAX_LENGTH + 2] = "";
+    char notes[NOTES_MAX_LENGTH + 2] = "";
+
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF); // clear iunput buffer
+    
+    printf("New contact's first name (%d char max): ", FIRST_NAME_MAX_LENGTH);
+    fgets(firstName, sizeof(firstName), stdin); // need fgets to accept white spaces.
+    firstName[strlen(firstName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+    printf("New contact's last name (%d char max): ", LAST_NAME_MAX_LENGTH);
+    fgets(lastName, sizeof(lastName), stdin); // need fgets to accept white spaces.
+    lastName[strlen(lastName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+    printf("New contact's email address (%d char max): ", EMAIL_MAX_LENGTH);
+    fgets(email, sizeof(email), stdin); // need fgets to accept white spaces.
+    email[strlen(email) - 1] = '\0'; // removes \n that fgets adds at the end
+
+    printf("New contact's phone number (%d char max): ", PHONE_MAX_LENGTH);
+    fgets(phone, sizeof(phone), stdin); // need fgets to accept white spaces.
+    phone[strlen(phone) - 1] = '\0'; // removes \n that fgets adds at the end
+
+    printf("Notes about this contact (%d char max): ", NOTES_MAX_LENGTH);
+    fgets(notes, sizeof(notes), stdin); // need fgets to accept white spaces.
+    notes[strlen(notes) - 1] = '\0'; // removes \n that fgets adds at the end
+
+    strcpy(newContact.firstName, firstName);
+    strcpy(newContact.lastName, lastName);
+    strcpy(newContact.email, email);
+    strcpy(newContact.phone, phone);
+    strcpy(newContact.notes, notes);
+
+    fprintf(contactFile, "\n%s,%s,%s,%s,%s",
+        newContact.firstName,
+        newContact.lastName,
+        newContact.email,
+        newContact.phone,
+        newContact.notes
+    );
+
+    printf("\nNew contact:\n");
+    displayContact(newContact);
+
+}
+
+int displayContact(Contact contact) {
+
+    printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
+        contact.firstName,
+        contact.lastName,
+        contact.email,
+        contact.phone,
+        contact.notes
+    );
+    printf("\n");
 
 }
 
