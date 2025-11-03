@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 #define FIRST_NAME_MAX_LENGTH 50
 #define LAST_NAME_MAX_LENGTH 50
-#define EMAIL_MAX_LENGTH 50
+#define EMAIL_MAX_LENGTH 75
 #define PHONE_MAX_LENGTH 10
 #define NOTES_MAX_LENGTH 1023
 
@@ -45,6 +47,9 @@ int addNewContact(FILE* contactFile) {
     /* TO DO:
         - regex to valid user input for each element of newContact
     */
+
+    int len;
+    bool pass;
     
     Contact newContact = {0};
 
@@ -55,11 +60,38 @@ int addNewContact(FILE* contactFile) {
     char notes[NOTES_MAX_LENGTH + 2] = "";
 
     int c;
-    while ((c = getchar()) != '\n' && c != EOF); // clear iunput buffer
+    while ((c = getchar()) != '\n' && c != EOF); // clear input buffer
+
+    pass = false;
+    while (!pass) {
+        printf("New contact's first name (%d char max): ", FIRST_NAME_MAX_LENGTH);
+        fgets(firstName, sizeof(firstName), stdin); // need fgets to accept white spaces.
+        firstName[strlen(firstName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        pass = true;
+        
+        len = strlen(firstName);
+        if (len <= 0 || len >= 50) {
+            printf("\n!!! Error: first name must be 1-50 character long !!!\n\n");
+            pass = false;
+
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+
+        for (int i = 0; i < len; i++)
+        {
+            if (!(isalpha(firstName[i]) || firstName[i] != '-' || firstName[i] != ' ')) {
+                printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
+                pass = false;
+                
+                while ((c = getchar()) != '\n' && c != EOF);
+
+                break;
+            }
+        }
+        
+    }
     
-    printf("New contact's first name (%d char max): ", FIRST_NAME_MAX_LENGTH);
-    fgets(firstName, sizeof(firstName), stdin); // need fgets to accept white spaces.
-    firstName[strlen(firstName) - 1] = '\0'; // removes \n that fgets adds at the end
 
     printf("New contact's last name (%d char max): ", LAST_NAME_MAX_LENGTH);
     fgets(lastName, sizeof(lastName), stdin); // need fgets to accept white spaces.
@@ -93,6 +125,8 @@ int addNewContact(FILE* contactFile) {
 
     printf("\nNew contact:\n");
     displayContact(newContact);
+
+    return 0;
 
 }
 

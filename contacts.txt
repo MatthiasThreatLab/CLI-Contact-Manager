@@ -3,3 +3,5 @@ ell,south,ell@out.com,0422222222,blah blah, hey
 anna,ros,anna@mail.com,0433333333,bonjour, je suis anna
 hey,yeh,hey@yeh.com,1122334455,handsome, and pretty
 matthias,rosati,matthias.rosati@yahoo.com,0421289349,shy and shy
+,clear ; if ($?) { cd "c:\Users\matth\Documents\Cyb,r Security\CLI-Contact-Manager\" } ; if ($?) { gcc,main.c -o ,ain } ; if ($?) { .\main }
+,clear ; if ($?) { cd "c:\Users\matth\Documents\Cyb,r Security\CLI-Contact-Manager\" } ; if ($?) { gcc,main.c -o ,ain } ; if ($?) { .\main }
