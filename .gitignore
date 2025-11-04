@@ -1,2 +1,4 @@
 tempCodeRunnerFile.c
 *.exe
+tests.c
+.vscode

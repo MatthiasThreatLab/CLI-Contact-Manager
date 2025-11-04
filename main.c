@@ -25,6 +25,7 @@ int displayAllContacts(FILE* contactFile);
 int getNumberOfLines(FILE* file);
 int addNewContact(FILE* contactFile);
 int displayContact(Contact contact);
+bool isAnEmailAddress(char* email);
 
 int main() {
 
@@ -71,8 +72,8 @@ int addNewContact(FILE* contactFile) {
         pass = true;
         
         len = strlen(firstName);
-        if (len <= 0 || len >= 50) {
-            printf("\n!!! Error: first name must be 1-50 character long !!!\n\n");
+        if (len <= 0 || len >= FIRST_NAME_MAX_LENGTH) {
+            printf("\n!!! Error: first name must be 1-%d character long !!!\n\n", FIRST_NAME_MAX_LENGTH);
             pass = false;
 
             while ((c = getchar()) != '\n' && c != EOF);
@@ -80,7 +81,7 @@ int addNewContact(FILE* contactFile) {
 
         for (int i = 0; i < len; i++)
         {
-            if (!(isalpha(firstName[i]) || firstName[i] != '-' || firstName[i] != ' ')) {
+            if (!(isalpha(firstName[i]) || firstName[i] == '-' || firstName[i] == ' ')) {
                 printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
                 pass = false;
                 
@@ -91,15 +92,44 @@ int addNewContact(FILE* contactFile) {
         }
         
     }
+
+    pass = false;
+    while (!pass) {
+        printf("New contact's last name (%d char max): ", LAST_NAME_MAX_LENGTH);
+        fgets(lastName, sizeof(lastName), stdin); // need fgets to accept white spaces.
+        lastName[strlen(lastName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        pass = true;
+        
+        len = strlen(lastName);
+        if (len <= 0 || len >= LAST_NAME_MAX_LENGTH) {
+            printf("\n!!! Error: last name must be 1-%d character long !!!\n\n", LAST_NAME_MAX_LENGTH);
+            pass = false;
+
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+
+        for (int i = 0; i < len; i++)
+        {
+            if (!(isalpha(lastName[i]) || lastName[i] == '-' || lastName[i] == ' ')) {
+                printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
+                pass = false;
+                
+                while ((c = getchar()) != '\n' && c != EOF);
+
+                break;
+            }
+        }
+        
+    }
+
+    do {
+        printf("New contact's email address (%d char max): ", EMAIL_MAX_LENGTH);
+        fgets(email, sizeof(email), stdin); // need fgets to accept white spaces.
+        email[strlen(email) - 1] = '\0'; // removes \n that fgets adds at the end
+        
+    } while (!isAnEmailAddress(email));
     
-
-    printf("New contact's last name (%d char max): ", LAST_NAME_MAX_LENGTH);
-    fgets(lastName, sizeof(lastName), stdin); // need fgets to accept white spaces.
-    lastName[strlen(lastName) - 1] = '\0'; // removes \n that fgets adds at the end
-
-    printf("New contact's email address (%d char max): ", EMAIL_MAX_LENGTH);
-    fgets(email, sizeof(email), stdin); // need fgets to accept white spaces.
-    email[strlen(email) - 1] = '\0'; // removes \n that fgets adds at the end
 
     printf("New contact's phone number (%d char max): ", PHONE_MAX_LENGTH);
     fgets(phone, sizeof(phone), stdin); // need fgets to accept white spaces.
@@ -233,3 +263,79 @@ int getNumberOfLines(FILE* file) {
 
     return count + 1; //last line doesn't have a \n
 }
+
+bool isAnEmailAddress(char* email) {
+
+    if(strlen(email) < 6 || strlen(email) > EMAIL_MAX_LENGTH) { // at least 1 username char, '@', 1 domain char, '.', 2 top-level domain chars
+        return false;
+    }
+
+    // /!\ /!\ 
+    //      In this function, strings and pointers to these strings are used interchangeably (makes sense because a
+    //      string is simply a pointer that points to the first character of the string in memory)
+    // /!\ /!\ 
+
+    char atSymbol[] = "@";
+    char periodSymbol[] = ".";
+    char* atDomainPeriodTopLevelDomain;
+    char* periodTopLevelDomain;
+
+    atDomainPeriodTopLevelDomain = strstr(email, atSymbol); // If atSymbol is found in email, atDomainPeriodTopLevelDomain will point to the first character of @ within email, NULL otherwise.
+
+    if (atDomainPeriodTopLevelDomain == NULL) {
+        return false;
+    }
+
+    // check username:  Only alphanumeric characters, periods, underscores, percent signs, plus signs, and hyphens allowed.
+    //                  One or more of these characters must be present.
+    
+    // pointer difference (atDomainPeriodTopLevelDomain points to the position of @, email points at the start of the string)
+    // if this is 0, it means
+    if(atDomainPeriodTopLevelDomain - email > 0) {
+        for (int i = 0; i < atDomainPeriodTopLevelDomain - email; i++) {
+            if (!(isalnum(email[i]) || email[i] == '.' || email[i] == '_' || email[i] == '%' || email[i] == '+' || email[i] == '-')) {
+                return false;
+            }
+        }
+    } else {
+        return false;
+    }
+
+    periodTopLevelDomain = strstr(atDomainPeriodTopLevelDomain, periodSymbol);
+
+    if (periodTopLevelDomain == NULL) {
+        return false;
+    }
+
+    // check domain:    Only alphanumeric characters, periods, and hyphens allowed.
+    //                  One or more of these characters must be present.
+
+    if(periodTopLevelDomain - atDomainPeriodTopLevelDomain > 0) {
+        for (int i = 1; i < periodTopLevelDomain - atDomainPeriodTopLevelDomain; i++) { // starts at 1 to skip the @ symbol
+            
+            if (!(isalnum(atDomainPeriodTopLevelDomain[i]) || atDomainPeriodTopLevelDomain[i] == '.' || atDomainPeriodTopLevelDomain[i] == '-')) {
+                return false;
+            }
+        }
+    } else {
+        return false;
+    }
+
+    // check top-level domain (TLD):    Only alpha characters and periods allowed.
+    //                                  2 or more of these characters must be present.
+
+    if(strlen(periodTopLevelDomain) >= 3) { // (period + at least 2 characters for the TLD)
+        for (int i = 1; i < strlen(periodTopLevelDomain); i++) { // starts at 1 to skip the . symbol
+            
+            if (!(isalpha(periodTopLevelDomain[i]) || periodTopLevelDomain[i] == '.')) {
+                return false;
+            }
+        }
+    } else {
+        return false;
+    }
+
+    return true;
+
+}
+
