@@ -10,6 +10,8 @@
 #define PHONE_MAX_LENGTH 20
 #define NOTES_MAX_LENGTH 1023
 
+#define NUMBER_OF_FIELDS_CONTACT_FILE 5
+
 typedef struct {
     
     char firstName[FIRST_NAME_MAX_LENGTH + 1]; // + 1 to take into account the null terminator '\0'
@@ -23,13 +25,14 @@ typedef struct {
 
 int clearInputBuffer();
 int displayAllContacts(FILE* contactFile);
-int getNumberOfLines(FILE* file);
+// int getNumberOfLines(FILE* file);
 int addNewContact(FILE* contactFile);
 int displayContact(Contact contact);
 bool isAnEmailAddress(char* email);
 bool isAFirstName(char* firstName);
 bool isALastName(char* lastName);
 bool isAPhoneNumber(char* phone);
+int getContactFromLineInFile(Contact* contact, char* line);
 
 int main() {
 
@@ -40,9 +43,9 @@ int main() {
         return 1;
     }
     
-    addNewContact(contactFile);
+    // addNewContact(contactFile);
 
-    // displayAllContacts(contactFile);
+    displayAllContacts(contactFile);
 
     fclose(contactFile);
 
@@ -143,61 +146,38 @@ int displayAllContacts(FILE* contactFile) {
     char line[sizeof(Contact)] = {0};
     char* column;
     Contact currentContact;
-    int columnCounter = 0;
-    char c;
+    
 
-    int numberOfContacts = getNumberOfLines(contactFile);
-
-    Contact* contacts = malloc(numberOfContacts * sizeof(Contact));
-    int contactIndex = 0;
+    Contact* contacts = {0};
+    int contactCounter = 0;
 
     char* notes;
 
     
     while (fgets(line, sizeof(line), contactFile) != NULL) { // loops through each line of the file
         currentContact = (Contact){0};
-        columnCounter = 0;
 
-        int i = 0;
-        while (line[i] != '\0') { // Loop through each character of each line until the null terminator is found
-            c = line[i];
-
-            // if we're not at the notes yet and we find the ',' character, it's a delimiter
-            // so we skip it (i++) and change the column
-            if (columnCounter < 4 && c == ',') {
-                columnCounter++;
-                i++;
-                continue;
-            }
-
-            // add the current character to the right variable of currentContact
-            switch (columnCounter) {
-                case 0:
-                    strncat(currentContact.firstName, &c, 1);
-                    break;
-                case 1:
-                    strncat(currentContact.lastName, &c, 1);
-                    break;
-                case 2:
-                    strncat(currentContact.email, &c, 1);
-                    break;
-                case 3:
-                    strncat(currentContact.phone, &c, 1);
-                    break;
-                case 4:
-                    strncat(currentContact.notes, &c, 1);
-                    break;
-            }
+        Contact* temp = realloc(contacts, (contactCounter + 1) * sizeof(Contact));
+        if(temp == NULL) {
             
-            i++; // next character
+            printf("Memory reallocation failed!\n");
+            return 1;
+
+        } else {
+
+            contacts = temp;
+            temp = NULL;
+
         }
 
-        contacts[contactIndex] = currentContact;
-        contactIndex++;
+        getContactFromLineInFile(&currentContact, line);
+
+        contacts[contactCounter] = currentContact;
+        contactCounter++;
         
     }
     
-    for (int i = 0; i < numberOfContacts; i++) {
+    for (int i = 0; i < contactCounter; i++) {
         
         printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
             contacts[i].firstName,
@@ -216,17 +196,43 @@ int displayAllContacts(FILE* contactFile) {
     return 0;
 }
 
-int getNumberOfLines(FILE* file) {
-    int count = 0;
+int getContactFromLineInFile(Contact* contact, char* line) {
     char c;
-
-    for (c = getc(file); c != EOF; c = getc(file))
-        if (c == '\n') // Increment count if this character is newline
-            count = count + 1;
+    int columnCounter = 0;
     
-    fseek(file, 0L, SEEK_SET);
+    int i = 0;
+    while (line[i] != '\0') { // Loop through each character of each line until the null terminator is found
+        c = line[i];
 
-    return count + 1; //last line doesn't have a \n
+        // if we're not at the notes yet and we find the ',' character, it's a delimiter
+        // so we skip it (i++) and change the column
+        if (columnCounter < NUMBER_OF_FIELDS_CONTACT_FILE - 1 && c == ',') {
+            columnCounter++;
+            i++;
+            continue;
+        }
+
+        // add the current character to the right variable of currentContact
+        switch (columnCounter) {
+            case 0:
+                strncat(contact->firstName, &c, 1);
+                break;
+            case 1:
+                strncat(contact->lastName, &c, 1);
+                break;
+            case 2:
+                strncat(contact->email, &c, 1);
+                break;
+            case 3:
+                strncat(contact->phone, &c, 1);
+                break;
+            case 4:
+                strncat(contact->notes, &c, 1);
+                break;
+        }
+        
+        i++; // next character
+    }
 }
 
 bool isAnEmailAddress(char* email) {
@@ -380,3 +386,16 @@ bool isAPhoneNumber(char* phone) {
     return pass;
 }
 
+
+// int getNumberOfLines(FILE* file) {
+//     int count = 0;
+//     char c;
+
+//     for (c = getc(file); c != EOF; c = getc(file))
+//         if (c == '\n') // Increment count if this character is newline
+//             count = count + 1;
+    
+//     fseek(file, 0L, SEEK_SET);
+
+//     return count + 1; //last line doesn't have a \n
+// }
