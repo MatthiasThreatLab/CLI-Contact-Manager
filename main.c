@@ -22,6 +22,13 @@ typedef struct {
 
 } Contact;
 
+typedef struct {
+    
+    Contact* array;
+    size_t contactCounter;
+
+} ContactArray;
+
 
 int clearInputBuffer();
 int displayAllContacts(FILE* contactFile);
@@ -33,6 +40,7 @@ bool isAFirstName(char* firstName);
 bool isALastName(char* lastName);
 bool isAPhoneNumber(char* phone);
 int getContactFromLineInFile(Contact* contact, char* line);
+ContactArray getAllContacts(FILE* contactFile);
 
 int main() {
 
@@ -143,91 +151,110 @@ int displayContact(Contact contact) {
 
 int displayAllContacts(FILE* contactFile) {
 
+    ContactArray allContacts = getAllContacts(contactFile);
+
+    if(allContacts.array == NULL) {
+        printf("Couldn't retrieve contacts\n");
+
+        free(allContacts.array);
+        allContacts.array = NULL;
+
+        return 1;
+    }
+    
+    for (int i = 0; i < allContacts.contactCounter; i++) {
+        
+        printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
+            allContacts.array[i].firstName,
+            allContacts.array[i].lastName,
+            allContacts.array[i].email,
+            allContacts.array[i].phone,
+            allContacts.array[i].notes
+        );
+        printf("\n");
+    }
+
+    free(allContacts.array);
+    allContacts.array = NULL;
+    
+
+    return 0;
+}
+
+ContactArray getAllContacts(FILE* contactFile) {
+
     char line[sizeof(Contact)] = {0};
     char* column;
     Contact currentContact;
     
 
-    Contact* contacts = {0};
+    Contact* array = {0};
     int contactCounter = 0;
-
-    char* notes;
 
     
     while (fgets(line, sizeof(line), contactFile) != NULL) { // loops through each line of the file
         currentContact = (Contact){0};
 
-        Contact* temp = realloc(contacts, (contactCounter + 1) * sizeof(Contact));
+        Contact* temp = realloc(array, (contactCounter + 1) * sizeof(Contact)); // increase the size of the array of Contact by 1 * sizeof(Contact)
         if(temp == NULL) {
             
             printf("Memory reallocation failed!\n");
-            return 1;
+            return (ContactArray){0};
 
         } else {
 
-            contacts = temp;
+            array = temp;
             temp = NULL;
 
         }
 
         getContactFromLineInFile(&currentContact, line);
 
-        contacts[contactCounter] = currentContact;
+        array[contactCounter] = currentContact;
         contactCounter++;
         
     }
-    
-    for (int i = 0; i < contactCounter; i++) {
-        
-        printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
-            contacts[i].firstName,
-            contacts[i].lastName,
-            contacts[i].email,
-            contacts[i].phone,
-            contacts[i].notes
-        );
-        printf("\n");
-    }
 
-    free(contacts);
-    contacts = NULL;
-    
+    ContactArray contactArray = {
+        array,
+        contactCounter
+    };
 
-    return 0;
+    return contactArray;
 }
 
 int getContactFromLineInFile(Contact* contact, char* line) {
-    char c;
+    char currentCharacter;
     int columnCounter = 0;
     
     int i = 0;
-    while (line[i] != '\0') { // Loop through each character of each line until the null terminator is found
-        c = line[i];
+    while (line[i] != '\0') { // Loop through each character of the line until the null terminator is found
+        currentCharacter = line[i];
 
-        // if we're not at the notes yet and we find the ',' character, it's a delimiter
+        // if we're not at the notes yet and the current character is ',', it's a delimiter
         // so we skip it (i++) and change the column
-        if (columnCounter < NUMBER_OF_FIELDS_CONTACT_FILE - 1 && c == ',') {
+        if (columnCounter < NUMBER_OF_FIELDS_CONTACT_FILE - 1 && currentCharacter == ',') {
             columnCounter++;
             i++;
             continue;
         }
 
-        // add the current character to the right variable of currentContact
+        // add the current character to the right variable of contact
         switch (columnCounter) {
             case 0:
-                strncat(contact->firstName, &c, 1);
+                strncat(contact->firstName, &currentCharacter, 1);
                 break;
             case 1:
-                strncat(contact->lastName, &c, 1);
+                strncat(contact->lastName, &currentCharacter, 1);
                 break;
             case 2:
-                strncat(contact->email, &c, 1);
+                strncat(contact->email, &currentCharacter, 1);
                 break;
             case 3:
-                strncat(contact->phone, &c, 1);
+                strncat(contact->phone, &currentCharacter, 1);
                 break;
             case 4:
-                strncat(contact->notes, &c, 1);
+                strncat(contact->notes, &currentCharacter, 1);
                 break;
         }
         
