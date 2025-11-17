@@ -7,7 +7,7 @@
 #define FIRST_NAME_MAX_LENGTH 50
 #define LAST_NAME_MAX_LENGTH 50
 #define EMAIL_MAX_LENGTH 75
-#define PHONE_MAX_LENGTH 10
+#define PHONE_MAX_LENGTH 20
 #define NOTES_MAX_LENGTH 1023
 
 typedef struct {
@@ -21,11 +21,15 @@ typedef struct {
 } Contact;
 
 
+int clearInputBuffer();
 int displayAllContacts(FILE* contactFile);
 int getNumberOfLines(FILE* file);
 int addNewContact(FILE* contactFile);
 int displayContact(Contact contact);
 bool isAnEmailAddress(char* email);
+bool isAFirstName(char* firstName);
+bool isALastName(char* lastName);
+bool isAPhoneNumber(char* phone);
 
 int main() {
 
@@ -45,12 +49,6 @@ int main() {
 }
 
 int addNewContact(FILE* contactFile) {
-    /* TO DO:
-        - regex to valid user input for each element of newContact
-    */
-
-    int len;
-    bool pass;
     
     Contact newContact = {0};
 
@@ -60,81 +58,40 @@ int addNewContact(FILE* contactFile) {
     char phone[PHONE_MAX_LENGTH + 2] = "";
     char notes[NOTES_MAX_LENGTH + 2] = "";
 
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF); // clear input buffer
-
-    pass = false;
-    while (!pass) {
+    
+    do {
+        clearInputBuffer();
         printf("New contact's first name (%d char max): ", FIRST_NAME_MAX_LENGTH);
         fgets(firstName, sizeof(firstName), stdin); // need fgets to accept white spaces.
         firstName[strlen(firstName) - 1] = '\0'; // removes \n that fgets adds at the end
-
-        pass = true;
         
-        len = strlen(firstName);
-        if (len <= 0 || len >= FIRST_NAME_MAX_LENGTH) {
-            printf("\n!!! Error: first name must be 1-%d character long !!!\n\n", FIRST_NAME_MAX_LENGTH);
-            pass = false;
+    } while(!isAFirstName(firstName));
 
-            while ((c = getchar()) != '\n' && c != EOF);
-        }
-
-        for (int i = 0; i < len; i++)
-        {
-            if (!(isalpha(firstName[i]) || firstName[i] == '-' || firstName[i] == ' ')) {
-                printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
-                pass = false;
-                
-                while ((c = getchar()) != '\n' && c != EOF);
-
-                break;
-            }
-        }
-        
-    }
-
-    pass = false;
-    while (!pass) {
+    do {
+        clearInputBuffer();
         printf("New contact's last name (%d char max): ", LAST_NAME_MAX_LENGTH);
         fgets(lastName, sizeof(lastName), stdin); // need fgets to accept white spaces.
         lastName[strlen(lastName) - 1] = '\0'; // removes \n that fgets adds at the end
-
-        pass = true;
         
-        len = strlen(lastName);
-        if (len <= 0 || len >= LAST_NAME_MAX_LENGTH) {
-            printf("\n!!! Error: last name must be 1-%d character long !!!\n\n", LAST_NAME_MAX_LENGTH);
-            pass = false;
-
-            while ((c = getchar()) != '\n' && c != EOF);
-        }
-
-        for (int i = 0; i < len; i++)
-        {
-            if (!(isalpha(lastName[i]) || lastName[i] == '-' || lastName[i] == ' ')) {
-                printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
-                pass = false;
-                
-                while ((c = getchar()) != '\n' && c != EOF);
-
-                break;
-            }
-        }
-        
-    }
+    } while(!isALastName(lastName));
 
     do {
+        clearInputBuffer();
         printf("New contact's email address (%d char max): ", EMAIL_MAX_LENGTH);
         fgets(email, sizeof(email), stdin); // need fgets to accept white spaces.
         email[strlen(email) - 1] = '\0'; // removes \n that fgets adds at the end
         
     } while (!isAnEmailAddress(email));
     
-
-    printf("New contact's phone number (%d char max): ", PHONE_MAX_LENGTH);
-    fgets(phone, sizeof(phone), stdin); // need fgets to accept white spaces.
-    phone[strlen(phone) - 1] = '\0'; // removes \n that fgets adds at the end
-
+    do {
+        clearInputBuffer();
+        printf("New contact's phone number (%d char max): ", PHONE_MAX_LENGTH);
+        fgets(phone, sizeof(phone), stdin); // need fgets to accept white spaces.
+        phone[strlen(phone) - 1] = '\0'; // removes \n that fgets adds at the end
+        
+    } while (!isAPhoneNumber(phone));
+    
+    clearInputBuffer();
     printf("Notes about this contact (%d char max): ", NOTES_MAX_LENGTH);
     fgets(notes, sizeof(notes), stdin); // need fgets to accept white spaces.
     notes[strlen(notes) - 1] = '\0'; // removes \n that fgets adds at the end
@@ -160,6 +117,13 @@ int addNewContact(FILE* contactFile) {
 
 }
 
+int clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    return 0;
+}
+
 int displayContact(Contact contact) {
 
     printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
@@ -171,6 +135,7 @@ int displayContact(Contact contact) {
     );
     printf("\n");
 
+    return 0;
 }
 
 int displayAllContacts(FILE* contactFile) {
@@ -267,6 +232,7 @@ int getNumberOfLines(FILE* file) {
 bool isAnEmailAddress(char* email) {
 
     if(strlen(email) < 6 || strlen(email) > EMAIL_MAX_LENGTH) { // at least 1 username char, '@', 1 domain char, '.', 2 top-level domain chars
+        printf("!!! Error: Wrong format of email address\n");
         return false;
     }
 
@@ -283,6 +249,7 @@ bool isAnEmailAddress(char* email) {
     atDomainPeriodTopLevelDomain = strstr(email, atSymbol); // If atSymbol is found in email, atDomainPeriodTopLevelDomain will point to the first character of @ within email, NULL otherwise.
 
     if (atDomainPeriodTopLevelDomain == NULL) {
+        printf("!!! Error: Wrong format of email address\n");
         return false;
     }
 
@@ -294,16 +261,19 @@ bool isAnEmailAddress(char* email) {
     if(atDomainPeriodTopLevelDomain - email > 0) {
         for (int i = 0; i < atDomainPeriodTopLevelDomain - email; i++) {
             if (!(isalnum(email[i]) || email[i] == '.' || email[i] == '_' || email[i] == '%' || email[i] == '+' || email[i] == '-')) {
+                printf("!!! Error: Wrong format of email address\n");
                 return false;
             }
         }
     } else {
+        printf("!!! Error: Wrong format of email address\n");
         return false;
     }
 
     periodTopLevelDomain = strstr(atDomainPeriodTopLevelDomain, periodSymbol);
 
     if (periodTopLevelDomain == NULL) {
+        printf("!!! Error: Wrong format of email address\n");
         return false;
     }
 
@@ -314,10 +284,12 @@ bool isAnEmailAddress(char* email) {
         for (int i = 1; i < periodTopLevelDomain - atDomainPeriodTopLevelDomain; i++) { // starts at 1 to skip the @ symbol
             
             if (!(isalnum(atDomainPeriodTopLevelDomain[i]) || atDomainPeriodTopLevelDomain[i] == '.' || atDomainPeriodTopLevelDomain[i] == '-')) {
+                printf("!!! Error: Wrong format of email address\n");
                 return false;
             }
         }
     } else {
+        printf("!!! Error: Wrong format of email address\n");
         return false;
     }
 
@@ -328,14 +300,83 @@ bool isAnEmailAddress(char* email) {
         for (int i = 1; i < strlen(periodTopLevelDomain); i++) { // starts at 1 to skip the . symbol
             
             if (!(isalpha(periodTopLevelDomain[i]) || periodTopLevelDomain[i] == '.')) {
+                printf("!!! Error: Wrong format of email address\n");
                 return false;
             }
         }
     } else {
+        printf("!!! Error: Wrong format of email address\n");
         return false;
     }
 
     return true;
 
+}
+
+bool isAFirstName(char* firstName) {
+    bool pass = true;
+        
+    int len = strlen(firstName);
+    if (len <= 0 || len >= FIRST_NAME_MAX_LENGTH) {
+        printf("\n!!! Error: first name must be 1-%d character long !!!\n\n", FIRST_NAME_MAX_LENGTH);
+        pass = false;
+    }
+
+    for (int i = 0; i < len; i++)
+    {
+        if (!(isalpha(firstName[i]) || firstName[i] == '-' || firstName[i] == ' ')) {
+            printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
+            pass = false;
+
+            break;
+        }
+    }
+
+    return pass;
+}
+
+bool isALastName(char* lastName) {
+    int pass = true;
+        
+    int len = strlen(lastName);
+    if (len <= 0 || len >= LAST_NAME_MAX_LENGTH) {
+        printf("\n!!! Error: last name must be 1-%d character long !!!\n\n", LAST_NAME_MAX_LENGTH);
+        pass = false;
+    }
+
+    for (int i = 0; i < len; i++)
+    {
+        if (!(isalpha(lastName[i]) || lastName[i] == '-' || lastName[i] == ' ')) {
+            printf("\n!!! Error: Only alpha characters, hyphen and spaces accepted !!!\n\n");
+            pass = false;
+
+            break;
+        }
+    }
+
+    return pass;
+}
+
+bool isAPhoneNumber(char* phone) {
+    bool pass = true;
+
+    int len = strlen(phone);
+    if (len != 10)
+    {
+        printf("!!! Error: Phone number must be 10 characters long !!!\n\n");
+        pass = false;
+    }
+
+    for (int i = 0; i < len; i++)
+    {
+        if (!isdigit(phone[i])) {
+            printf("\n!!! Error: Only digits are accepted !!!\n\n");
+            pass = false;
+
+            break;
+        }
+    }
+
+    return pass;
 }
 
