@@ -26,7 +26,7 @@ What are you trying to do today?
 - Understand how excatly fgets() reads a file, what if the the current line is bigger than the buffer, will I lose information? Probably
 - usage of strtok, to properly read through each line of the database
 - buffer overflow when using strncat()
-- wanted to use regex to check user input but there is no cross-platform library to do so, so I had to do it manually.
+- wanted to use regex to valid user input but there is no cross-platform library to do so, so I had to do it manually.
 
 **Solutions / Insights:**  
 -

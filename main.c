@@ -12,6 +12,10 @@
 
 #define NUMBER_OF_FIELDS_CONTACT_FILE 5
 
+#define MATCH 1
+#define NO_MATCH 2
+#define IGNORE 3
+
 typedef struct {
     
     char firstName[FIRST_NAME_MAX_LENGTH + 1]; // + 1 to take into account the null terminator '\0'
@@ -24,7 +28,7 @@ typedef struct {
 
 typedef struct {
     
-    Contact* array;
+    Contact* contacts;
     size_t contactCounter;
 
 } ContactArray;
@@ -32,7 +36,6 @@ typedef struct {
 
 int clearInputBuffer();
 int displayAllContacts(FILE* contactFile);
-// int getNumberOfLines(FILE* file);
 int addNewContact(FILE* contactFile);
 int displayContact(Contact contact);
 bool isAnEmailAddress(char* email);
@@ -41,6 +44,7 @@ bool isALastName(char* lastName);
 bool isAPhoneNumber(char* phone);
 int getContactFromLineInFile(Contact* contact, char* line);
 ContactArray getAllContacts(FILE* contactFile);
+ContactArray findContacts(FILE* contactFile, char* firstName, char* lastName, char* email, char* phone);
 
 int main() {
 
@@ -53,9 +57,89 @@ int main() {
     
     // addNewContact(contactFile);
 
-    displayAllContacts(contactFile);
+    // displayAllContacts(contactFile);
+
+    ContactArray foundContacts = findContacts(contactFile, NULL, NULL, NULL , NULL);
+
+    for (size_t i = 0; i < foundContacts.contactCounter; i++)
+    {
+        printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
+            foundContacts.contacts[i].firstName,
+            foundContacts.contacts[i].lastName,
+            foundContacts.contacts[i].email,
+            foundContacts.contacts[i].phone,
+            foundContacts.contacts[i].notes
+        );
+        printf("\n");
+    }
+
+    free(foundContacts.contacts);
+    foundContacts.contacts = NULL;
+
+    
 
     fclose(contactFile);
+
+}
+
+ContactArray findContacts(FILE* contactFile, char* firstNameSearch, char* lastNameSearch, char* emailSearch, char* phoneSearch) {
+    ContactArray contactsFound = {NULL, 0};
+    
+    if(firstNameSearch == NULL && lastNameSearch == NULL && emailSearch == NULL && phoneSearch == NULL) {
+        return getAllContacts(contactFile);
+    }
+
+    char line[sizeof(Contact)] = {0};
+    Contact currentContact;
+    
+    while (fgets(line, sizeof(line), contactFile) != NULL) { // loops through each line of the file
+
+        currentContact = (Contact){0};
+        getContactFromLineInFile(&currentContact, line);
+
+        if(firstNameSearch != NULL) {
+            if(strcmp(currentContact.firstName, firstNameSearch) != 0) {
+                continue;
+            }
+        }
+
+        if(lastNameSearch != NULL) {
+            if(strcmp(currentContact.lastName, lastNameSearch) != 0) {
+                continue;
+            }
+        }
+
+        if(emailSearch != NULL) {
+            if(strcmp(currentContact.email, emailSearch) != 0) {
+                continue;
+            }
+        }
+
+        if(phoneSearch != NULL) {
+            if(strcmp(currentContact.phone, phoneSearch) != 0) {
+                continue;
+            }
+        }
+
+        Contact* temp = realloc(contactsFound.contacts, (contactsFound.contactCounter + 1) * sizeof(Contact)); // increase the size of the array of Contact by 1 * sizeof(Contact)
+        if(temp == NULL) {
+            
+            printf("Memory reallocation failed!\n");
+            return (ContactArray){0};
+
+        } else {
+
+            contactsFound.contacts = temp;
+            temp = NULL;
+
+        }
+
+        contactsFound.contacts[contactsFound.contactCounter] = currentContact;
+        contactsFound.contactCounter++;
+        
+    }
+
+    return contactsFound;
 
 }
 
@@ -153,11 +237,13 @@ int displayAllContacts(FILE* contactFile) {
 
     ContactArray allContacts = getAllContacts(contactFile);
 
-    if(allContacts.array == NULL) {
+    printf("\n%d", allContacts.contactCounter);
+
+    if(allContacts.contacts == NULL) {
         printf("Couldn't retrieve contacts\n");
 
-        free(allContacts.array);
-        allContacts.array = NULL;
+        free(allContacts.contacts);
+        allContacts.contacts = NULL;
 
         return 1;
     }
@@ -165,17 +251,17 @@ int displayAllContacts(FILE* contactFile) {
     for (int i = 0; i < allContacts.contactCounter; i++) {
         
         printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
-            allContacts.array[i].firstName,
-            allContacts.array[i].lastName,
-            allContacts.array[i].email,
-            allContacts.array[i].phone,
-            allContacts.array[i].notes
+            allContacts.contacts[i].firstName,
+            allContacts.contacts[i].lastName,
+            allContacts.contacts[i].email,
+            allContacts.contacts[i].phone,
+            allContacts.contacts[i].notes
         );
         printf("\n");
     }
 
-    free(allContacts.array);
-    allContacts.array = NULL;
+    free(allContacts.contacts);
+    allContacts.contacts = NULL;
     
 
     return 0;
@@ -184,18 +270,15 @@ int displayAllContacts(FILE* contactFile) {
 ContactArray getAllContacts(FILE* contactFile) {
 
     char line[sizeof(Contact)] = {0};
-    char* column;
     Contact currentContact;
-    
 
-    Contact* array = {0};
+    Contact* contacts = {0};
     int contactCounter = 0;
-
     
     while (fgets(line, sizeof(line), contactFile) != NULL) { // loops through each line of the file
         currentContact = (Contact){0};
 
-        Contact* temp = realloc(array, (contactCounter + 1) * sizeof(Contact)); // increase the size of the array of Contact by 1 * sizeof(Contact)
+        Contact* temp = realloc(contacts, (contactCounter + 1) * sizeof(Contact)); // increase the size of the array of Contact by 1 * sizeof(Contact)
         if(temp == NULL) {
             
             printf("Memory reallocation failed!\n");
@@ -203,24 +286,19 @@ ContactArray getAllContacts(FILE* contactFile) {
 
         } else {
 
-            array = temp;
+            contacts = temp;
             temp = NULL;
 
         }
 
         getContactFromLineInFile(&currentContact, line);
 
-        array[contactCounter] = currentContact;
+        contacts[contactCounter] = currentContact;
         contactCounter++;
         
     }
 
-    ContactArray contactArray = {
-        array,
-        contactCounter
-    };
-
-    return contactArray;
+    return (ContactArray){contacts, contactCounter};
 }
 
 int getContactFromLineInFile(Contact* contact, char* line) {
@@ -414,15 +492,3 @@ bool isAPhoneNumber(char* phone) {
 }
 
 
-// int getNumberOfLines(FILE* file) {
-//     int count = 0;
-//     char c;
-
-//     for (c = getc(file); c != EOF; c = getc(file))
-//         if (c == '\n') // Increment count if this character is newline
-//             count = count + 1;
-    
-//     fseek(file, 0L, SEEK_SET);
-
-//     return count + 1; //last line doesn't have a \n
-// }
