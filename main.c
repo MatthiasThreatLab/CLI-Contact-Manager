@@ -45,6 +45,7 @@ bool isAPhoneNumber(char* phone);
 int getContactFromLineInFile(Contact* contact, char* line);
 ContactArray getAllContacts(FILE* contactFile);
 ContactArray findContacts(FILE* contactFile, char* firstName, char* lastName, char* email, char* phone);
+int contactSearch(FILE* contactFile);
 
 int main() {
 
@@ -55,31 +56,110 @@ int main() {
         return 1;
     }
     
-    // addNewContact(contactFile);
+    int choice = 0;
 
-    // displayAllContacts(contactFile);
+    do {
+        printf("\n---------- Menu ----------\n");
+        printf("1. Display all contacts\n");
+        printf("2. Search for a contact\n");
+        printf("3. Edit contact\n");
+        printf("---------- Menu ----------\n\n");
 
-    ContactArray foundContacts = findContacts(contactFile, NULL, NULL, NULL , NULL);
+        printf("Select an option: ");
+        scanf(" %d", &choice);
 
-    for (size_t i = 0; i < foundContacts.contactCounter; i++)
-    {
-        printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
-            foundContacts.contacts[i].firstName,
-            foundContacts.contacts[i].lastName,
-            foundContacts.contacts[i].email,
-            foundContacts.contacts[i].phone,
-            foundContacts.contacts[i].notes
-        );
-        printf("\n");
-    }
+        if (choice == 1) {
+            
+            displayAllContacts(contactFile);
 
-    free(foundContacts.contacts);
-    foundContacts.contacts = NULL;
-
+        } else if (choice == 2) {
+            
+            contactSearch(contactFile);
+            
+        } else {
+            clearInputBuffer();
+            printf("!!!! Error, please try again !!!\n\n");
+        }
+        
+    } while (true);
+    
     
 
     fclose(contactFile);
 
+}
+
+int contactSearch(FILE* contactFile) {
+    char firstName[FIRST_NAME_MAX_LENGTH + 2] = ""; // + 2 to take into account the null terminator '\0' and '\n' for user input
+    char lastName[LAST_NAME_MAX_LENGTH + 2] = "";
+    char email[EMAIL_MAX_LENGTH + 2] = "";
+    char phone[PHONE_MAX_LENGTH + 2] = "";
+
+    printf("---- Contact search ----\n");
+    printf("Press Enter when ready\n");
+            
+    do {
+        clearInputBuffer();
+        printf("Contact's first name (%d char max, optional): ", FIRST_NAME_MAX_LENGTH);
+        fgets(firstName, sizeof(firstName), stdin); // need fgets to accept white spaces.
+        firstName[strlen(firstName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(firstName, "") == 0) {
+            break;
+        }
+        
+    } while(!isAFirstName(firstName));
+
+    do {
+        clearInputBuffer();
+        printf("Contact's last name (%d char max, optional): ", LAST_NAME_MAX_LENGTH);
+        fgets(lastName, sizeof(lastName), stdin); // need fgets to accept white spaces.
+        lastName[strlen(lastName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(lastName, "") == 0) {
+            break;
+        }
+        
+    } while(!isALastName(lastName));
+
+    do {
+        clearInputBuffer();
+        printf("Contact's email address (%d char max, optional): ", EMAIL_MAX_LENGTH);
+        fgets(email, sizeof(email), stdin); // need fgets to accept white spaces.
+        email[strlen(email) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(email, "") == 0) {
+            break;
+        }
+        
+    } while (!isAnEmailAddress(email));
+    
+    do {
+        clearInputBuffer();
+        printf("Contact's phone number (%d char max, optional): ", PHONE_MAX_LENGTH);
+        fgets(phone, sizeof(phone), stdin); // need fgets to accept white spaces.
+        phone[strlen(phone) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(phone, "") == 0) {
+            break;
+        }
+        
+    } while (!isAPhoneNumber(phone));
+
+    ContactArray contactsFound = findContacts(contactFile, strcmp(firstName, "") == 0 ? NULL : firstName, strcmp(lastName, "") == 0 ? NULL : lastName, strcmp(email, "") == 0 ? NULL : email, strcmp(phone, "") == 0 ? NULL : phone);
+
+    if(contactsFound.contactCounter > 0) {
+        printf("\n\n%d contact%s found:\n", contactsFound.contactCounter, contactsFound.contactCounter > 1 ? "s" : "");
+        printf("--------------------------\n");
+
+        for (size_t i = 0; i < contactsFound.contactCounter; i++)
+        {
+            displayContact(contactsFound.contacts[i]);
+        }
+        
+    } else {
+        printf("\nNo contacts found.\n\n");
+    }
 }
 
 ContactArray findContacts(FILE* contactFile, char* firstNameSearch, char* lastNameSearch, char* emailSearch, char* phoneSearch) {
