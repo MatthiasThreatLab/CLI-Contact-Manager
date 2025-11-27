@@ -12,10 +12,6 @@
 
 #define NUMBER_OF_FIELDS_CONTACT_FILE 5
 
-#define MATCH 1
-#define NO_MATCH 2
-#define IGNORE 3
-
 typedef struct {
     
     char firstName[FIRST_NAME_MAX_LENGTH + 1]; // + 1 to take into account the null terminator '\0'
@@ -45,7 +41,8 @@ bool isAPhoneNumber(char* phone);
 int getContactFromLineInFile(Contact* contact, char* line);
 ContactArray getAllContacts(FILE* contactFile);
 ContactArray findContacts(FILE* contactFile, char* firstName, char* lastName, char* email, char* phone);
-int contactSearch(FILE* contactFile);
+ContactArray contactSearch(FILE* contactFile);
+int editContactPrompt(FILE* contactFile);
 
 int main() {
 
@@ -56,6 +53,7 @@ int main() {
         return 1;
     }
     
+    ContactArray contactsFound = {NULL, 0};
     int choice = 0;
 
     do {
@@ -74,7 +72,30 @@ int main() {
 
         } else if (choice == 2) {
             
-            contactSearch(contactFile);
+            printf("\n\n---- Contact search ----\n");
+            
+            contactsFound = contactSearch(contactFile);
+
+            if(contactsFound.contactCounter > 0) {
+                printf("\n\n%d contact%s found:\n", contactsFound.contactCounter, contactsFound.contactCounter > 1 ? "s" : "");
+                printf("--------------------------\n");
+
+                for (size_t i = 0; i < contactsFound.contactCounter; i++)
+                {
+                    displayContact(contactsFound.contacts[i]);
+                }
+                
+            } else {
+                printf("\nNo contacts found.\n\n");
+            }
+
+            free(contactsFound.contacts);
+            contactsFound.contacts = NULL;
+
+        } else if (choice == 3) {
+
+            printf("---- Edit contact ----\n");
+            editContactPrompt(contactFile);
             
         } else {
             clearInputBuffer();
@@ -89,14 +110,19 @@ int main() {
 
 }
 
-int contactSearch(FILE* contactFile) {
+int editContactPrompt(FILE* contactFile) {
+    printf("Please enter the information about the contact you want to edit\n");
+
+
+}
+
+ContactArray contactSearch(FILE* contactFile) {
     char firstName[FIRST_NAME_MAX_LENGTH + 2] = ""; // + 2 to take into account the null terminator '\0' and '\n' for user input
     char lastName[LAST_NAME_MAX_LENGTH + 2] = "";
     char email[EMAIL_MAX_LENGTH + 2] = "";
     char phone[PHONE_MAX_LENGTH + 2] = "";
 
-    printf("---- Contact search ----\n");
-    printf("Press Enter when ready\n");
+    printf("Press Enter when ready\n\n");
             
     do {
         clearInputBuffer();
@@ -146,24 +172,13 @@ int contactSearch(FILE* contactFile) {
         
     } while (!isAPhoneNumber(phone));
 
-    ContactArray contactsFound = findContacts(contactFile, strcmp(firstName, "") == 0 ? NULL : firstName, strcmp(lastName, "") == 0 ? NULL : lastName, strcmp(email, "") == 0 ? NULL : email, strcmp(phone, "") == 0 ? NULL : phone);
-
-    if(contactsFound.contactCounter > 0) {
-        printf("\n\n%d contact%s found:\n", contactsFound.contactCounter, contactsFound.contactCounter > 1 ? "s" : "");
-        printf("--------------------------\n");
-
-        for (size_t i = 0; i < contactsFound.contactCounter; i++)
-        {
-            displayContact(contactsFound.contacts[i]);
-        }
-        
-    } else {
-        printf("\nNo contacts found.\n\n");
-    }
+    return findContacts(contactFile, strcmp(firstName, "") == 0 ? NULL : firstName, strcmp(lastName, "") == 0 ? NULL : lastName, strcmp(email, "") == 0 ? NULL : email, strcmp(phone, "") == 0 ? NULL : phone);
 }
 
 ContactArray findContacts(FILE* contactFile, char* firstNameSearch, char* lastNameSearch, char* emailSearch, char* phoneSearch) {
     ContactArray contactsFound = {NULL, 0};
+
+    rewind(contactFile); // reset file pointer to the beginning
     
     if(firstNameSearch == NULL && lastNameSearch == NULL && emailSearch == NULL && phoneSearch == NULL) {
         return getAllContacts(contactFile);
@@ -348,6 +363,8 @@ int displayAllContacts(FILE* contactFile) {
 }
 
 ContactArray getAllContacts(FILE* contactFile) {
+    rewind(contactFile); // reset file pointer to the beginning
+
 
     char line[sizeof(Contact)] = {0};
     Contact currentContact;
