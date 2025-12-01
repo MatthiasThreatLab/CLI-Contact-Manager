@@ -25,38 +25,37 @@ typedef struct {
 typedef struct {
     
     Contact* contacts;
-    size_t contactCounter;
+    size_t counter;
 
 } ContactArray;
 
 
 int clearInputBuffer();
-int displayAllContacts(FILE* contactFile);
-int addNewContact(FILE* contactFile);
+int displayAllContacts(char* contactFilePath);
+int addNewContact(char* contactFilePath);
 int displayContact(Contact contact);
 bool isAnEmailAddress(char* email);
 bool isAFirstName(char* firstName);
 bool isALastName(char* lastName);
 bool isAPhoneNumber(char* phone);
 int getContactFromLineInFile(Contact* contact, char* line);
-ContactArray getAllContacts(FILE* contactFile);
-ContactArray findContacts(FILE* contactFile, char* firstName, char* lastName, char* email, char* phone);
-ContactArray contactSearch(FILE* contactFile);
-int editContactPrompt(FILE* contactFile);
+ContactArray getAllContacts(char* contactFilePath);
+ContactArray findContacts(char* contactFilePath, char* firstNameSearch, char* lastNameSearch, char* emailSearch, char* phoneSearch);
+ContactArray contactSearchPrompt(char* contactFilePath);
+int editContactPrompt(char* contactFilePath);
+int editContact(char* contactFilePath, Contact contactToEdit);
+Contact createContact(char* firstName, char* lastName, char* email, char* phone, char* notes);
+int writeContactToFile(char* contactFilePath, Contact contact);
+int deleteContactFromFile(char* contactFilePath, Contact contactToDelete);
 
 int main() {
 
-    FILE* contactFile = fopen("contacts.txt", "a+");
-
-    if (contactFile == NULL) {
-        printf("Could not open the file");
-        return 1;
-    }
+    char* contactFilePath = "contacts.txt";
     
     ContactArray contactsFound = {NULL, 0};
-    int choice = 0;
+    int choice = 3;
 
-    do {
+    while(true) {
         printf("\n---------- Menu ----------\n");
         printf("1. Display all contacts\n");
         printf("2. Search for a contact\n");
@@ -68,19 +67,19 @@ int main() {
 
         if (choice == 1) {
             
-            displayAllContacts(contactFile);
+            displayAllContacts(contactFilePath);
 
         } else if (choice == 2) {
             
             printf("\n\n---- Contact search ----\n");
             
-            contactsFound = contactSearch(contactFile);
+            contactsFound = contactSearchPrompt(contactFilePath);
 
-            if(contactsFound.contactCounter > 0) {
-                printf("\n\n%d contact%s found:\n", contactsFound.contactCounter, contactsFound.contactCounter > 1 ? "s" : "");
+            if(contactsFound.counter > 0) {
+                printf("\n\n%d contact%s found:\n", contactsFound.counter, contactsFound.counter > 1 ? "s" : "");
                 printf("--------------------------\n");
 
-                for (size_t i = 0; i < contactsFound.contactCounter; i++)
+                for (size_t i = 0; i < contactsFound.counter; i++)
                 {
                     displayContact(contactsFound.contacts[i]);
                 }
@@ -92,31 +91,255 @@ int main() {
             free(contactsFound.contacts);
             contactsFound.contacts = NULL;
 
+            
+
         } else if (choice == 3) {
 
             printf("---- Edit contact ----\n");
-            editContactPrompt(contactFile);
+            editContactPrompt(contactFilePath);
+
+            // displayAllContacts(contactFilePath);
+
+            // Contact contacToEdit = {"ell","south","ell@south.com","0422222222","hey"};
+
+            // editContact(contactFilePath, contacToEdit);
             
         } else {
             clearInputBuffer();
             printf("!!!! Error, please try again !!!\n\n");
         }
         
-    } while (true);
+    }
+
+}
+
+int editContactPrompt(char* contactFilePath) {
     
+    printf("Please enter the information about the contact you want to edit\n");
+
+    ContactArray contactsFound = contactSearchPrompt(contactFilePath);
+
+    if(contactsFound.counter == 0) {
+
+        printf("\nNo contacts found.\n\n");
+
+    } else if (contactsFound.counter == 1) {
+
+        printf("\n\n1 contact found, please edit below:\n\n");
+        editContact(contactFilePath, contactsFound.contacts[0]);
+
+    } else if (contactsFound.counter > 1) {
+
+        printf("\n\n%d contact%s found:\n", contactsFound.counter, contactsFound.counter > 1 ? "s" : "");
+        printf("Refine your search, please\n");
+        // TODO: display a menu the user can select from each contact found to edit this one (or 0 if they want to return to the main menu)
+        printf("--------------------------\n");
+
+        for (size_t i = 0; i < contactsFound.counter; i++)
+        {
+            displayContact(contactsFound.contacts[i]);
+        }
+        
+    } else {
+
+        printf("\n!!! ERROR please try again\n\n");
+
+    }
+
+    free(contactsFound.contacts);
+    contactsFound.contacts = NULL;
+
+    return 0;
+}
+
+int editContact(char* contactFilePath, Contact contactToEdit) {
+    char newFirstName[FIRST_NAME_MAX_LENGTH + 2] = ""; // + 2 to take into account the null terminator '\0' and '\n' for user input
+    char newLastName[LAST_NAME_MAX_LENGTH + 2] = "";
+    char newEmail[EMAIL_MAX_LENGTH + 2] = "";
+    char newPhone[PHONE_MAX_LENGTH + 2] = "";
+    char newNotes[NOTES_MAX_LENGTH + 2] = "";
+
+    char* oldFirstName = contactToEdit.firstName;
+    char* oldLastName = contactToEdit.lastName;
+    char* oldEmail = contactToEdit.email;
+    char* oldPhone = contactToEdit.phone;
+    char* oldNotes = contactToEdit.notes;
+
+    // char oldFirstName[FIRST_NAME_MAX_LENGTH + 2] = contactToEdit.firstName;
+    // char oldLastName[LAST_NAME_MAX_LENGTH + 2] = contactToEdit.lastName;
+    // char oldEmail[EMAIL_MAX_LENGTH + 2] = contactToEdit.email;
+    // char oldPhone[PHONE_MAX_LENGTH + 2] = contactToEdit.phone;
+    // char oldNotes[NOTES_MAX_LENGTH + 2] = contactToEdit.notes;
+
+    while(true) {
+        clearInputBuffer();
+        printf("Old first name: %s\n", oldFirstName);
+        printf("New first name (%d char max, leave blank to keep it the same): ", FIRST_NAME_MAX_LENGTH);
+        fgets(newFirstName, sizeof(newFirstName), stdin); // need fgets to accept white spaces.
+        newFirstName[strlen(newFirstName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(newFirstName, "") == 0) {
+            strcpy(newFirstName, oldFirstName);
+            break;
+        } else if (isAFirstName(newFirstName)) {
+            break;
+        }
+    }
+
+    while(true) {
+        clearInputBuffer();
+        printf("Old last name: %s\n", oldLastName);
+        printf("New last name (%d char max, leave blank to keep it the same): ", LAST_NAME_MAX_LENGTH);
+        fgets(newLastName, sizeof(newLastName), stdin); // need fgets to accept white spaces.
+        newLastName[strlen(newLastName) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(newLastName, "") == 0) {
+            strcpy(newLastName, oldLastName);
+            break;
+        } else if (isALastName(newLastName)) {
+            break;
+        }  
+    }
+
+    while(true) {
+        clearInputBuffer();
+        printf("Old email: %s\n", oldEmail);
+        printf("New email address (%d char max, leave blank to keep it the same): ", EMAIL_MAX_LENGTH);
+        fgets(newEmail, sizeof(newEmail), stdin); // need fgets to accept white spaces.
+        newEmail[strlen(newEmail) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(newEmail, "") == 0) {
+            strcpy(newEmail, oldEmail);
+            break;
+        } else if (isAnEmailAddress(newEmail)) {
+            break;
+        }
+    }
     
+    while(true) {
+        clearInputBuffer();
+        printf("Old phone number: %s\n", oldPhone);
+        printf("New phone number (%d char max, leave blank to keep it the same): ", PHONE_MAX_LENGTH);
+        fgets(newPhone, sizeof(newPhone), stdin); // need fgets to accept white spaces.
+        newPhone[strlen(newPhone) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(newPhone, "") == 0) {
+            strcpy(newPhone, oldPhone);
+            break;
+        } else if (isAPhoneNumber(newPhone)) {
+            break;
+        }
+    }
+    
+    clearInputBuffer();
+    printf("Old notes:\n");
+    printf("---------------------------\n");
+    printf("%s\n", oldNotes);
+    printf("---------------------------\n");
+    printf("New notes about this contact (%d char max): ", NOTES_MAX_LENGTH);
+    fgets(newNotes, sizeof(newNotes), stdin); // need fgets to accept white spaces.
+    newNotes[strlen(newNotes) - 1] = '\0'; // removes \n that fgets adds at the end
+
+    if(strcmp(newNotes, "") == 0) {
+        strcpy(newNotes, oldNotes);
+        newNotes[strlen(newNotes) - 1] = '\0'; // removes \n that is at the end of the notes
+    }
+
+    deleteContactFromFile(contactFilePath, contactToEdit);
+
+    Contact editedContact = createContact(newFirstName, newLastName, newEmail, newPhone, newNotes);
+    writeContactToFile(contactFilePath, editedContact);
+
+    printf("\nUpdated contact:\n");
+    displayContact(editedContact);
+
+    return 0;
+}
+
+int deleteContactFromFile(char* contactFilePath, Contact contactToDelete) {
+    char* tempFilePath = "temp.txt";
+
+    FILE* contactFile = fopen(contactFilePath, "r");
+    FILE* tempFile = fopen(tempFilePath, "w");
+
+    if (contactFile == NULL) {
+        printf("Could not open the contcat file");
+        fclose(contactFile);
+        fclose(tempFile);
+        return 1;
+    }
+
+    if (tempFile == NULL) {
+        printf("Could not open the temp file");
+        fclose(contactFile);
+        fclose(tempFile);
+        return 1;
+    }
+
+    char line[sizeof(Contact)] = {0};
+    Contact currentContact;
+    
+    while (fgets(line, sizeof(line), contactFile) != NULL) { // loops through each line of the file
+
+        currentContact = (Contact){0};
+        getContactFromLineInFile(&currentContact, line);
+
+        if(strcmp(currentContact.firstName, contactToDelete.firstName) == 0 &&
+        strcmp(currentContact.lastName, contactToDelete.lastName) == 0 &&
+        strcmp(currentContact.email, contactToDelete.email) == 0 &&
+        strcmp(currentContact.phone, contactToDelete.phone) == 0)
+        {
+            continue;
+        } else {
+            fputs(line, tempFile);
+        }
+
+    }
+
+    fclose(tempFile);
+    fclose(contactFile);
+
+    remove(contactFilePath); // Deletes the original file
+    rename(tempFilePath, contactFilePath); // Renames the temporary file
+
+    return 0;
+}
+
+int writeContactToFile(char* contactFilePath, Contact contact) {
+    FILE* contactFile = fopen(contactFilePath, "a");
+
+    if (contactFile == NULL) {
+        printf("Could not open the file");
+        fclose(contactFile);
+        return 1;
+    }
+    
+    fprintf(contactFile, "\n%s,%s,%s,%s,%s",
+        contact.firstName,
+        contact.lastName,
+        contact.email,
+        contact.phone,
+        contact.notes
+    );
 
     fclose(contactFile);
 
+    return 0;
 }
 
-int editContactPrompt(FILE* contactFile) {
-    printf("Please enter the information about the contact you want to edit\n");
+Contact createContact(char* firstName, char* lastName, char* email, char* phone, char* notes) {
+    Contact newContact = (Contact){0};
+    
+    strcpy(newContact.firstName, firstName);
+    strcpy(newContact.lastName, lastName);
+    strcpy(newContact.email, email);
+    strcpy(newContact.phone, phone);
+    strcpy(newContact.notes, notes);
 
-
+    return newContact;
 }
 
-ContactArray contactSearch(FILE* contactFile) {
+ContactArray contactSearchPrompt(char* contactFilePath) {
     char firstName[FIRST_NAME_MAX_LENGTH + 2] = ""; // + 2 to take into account the null terminator '\0' and '\n' for user input
     char lastName[LAST_NAME_MAX_LENGTH + 2] = "";
     char email[EMAIL_MAX_LENGTH + 2] = "";
@@ -172,16 +395,16 @@ ContactArray contactSearch(FILE* contactFile) {
         
     } while (!isAPhoneNumber(phone));
 
-    return findContacts(contactFile, strcmp(firstName, "") == 0 ? NULL : firstName, strcmp(lastName, "") == 0 ? NULL : lastName, strcmp(email, "") == 0 ? NULL : email, strcmp(phone, "") == 0 ? NULL : phone);
+    return findContacts(contactFilePath, strcmp(firstName, "") == 0 ? NULL : firstName, strcmp(lastName, "") == 0 ? NULL : lastName, strcmp(email, "") == 0 ? NULL : email, strcmp(phone, "") == 0 ? NULL : phone);
 }
 
-ContactArray findContacts(FILE* contactFile, char* firstNameSearch, char* lastNameSearch, char* emailSearch, char* phoneSearch) {
+ContactArray findContacts(char* contactFilePath, char* firstNameSearch, char* lastNameSearch, char* emailSearch, char* phoneSearch) {
     ContactArray contactsFound = {NULL, 0};
 
-    rewind(contactFile); // reset file pointer to the beginning
+    FILE* contactFile = fopen(contactFilePath, "r");
     
     if(firstNameSearch == NULL && lastNameSearch == NULL && emailSearch == NULL && phoneSearch == NULL) {
-        return getAllContacts(contactFile);
+        return getAllContacts(contactFilePath);
     }
 
     char line[sizeof(Contact)] = {0};
@@ -216,10 +439,11 @@ ContactArray findContacts(FILE* contactFile, char* firstNameSearch, char* lastNa
             }
         }
 
-        Contact* temp = realloc(contactsFound.contacts, (contactsFound.contactCounter + 1) * sizeof(Contact)); // increase the size of the array of Contact by 1 * sizeof(Contact)
+        Contact* temp = realloc(contactsFound.contacts, (contactsFound.counter + 1) * sizeof(Contact)); // increase the size of the array of Contact by 1 * sizeof(Contact)
         if(temp == NULL) {
             
             printf("Memory reallocation failed!\n");
+            fclose(contactFile);
             return (ContactArray){0};
 
         } else {
@@ -229,19 +453,18 @@ ContactArray findContacts(FILE* contactFile, char* firstNameSearch, char* lastNa
 
         }
 
-        contactsFound.contacts[contactsFound.contactCounter] = currentContact;
-        contactsFound.contactCounter++;
+        contactsFound.contacts[contactsFound.counter] = currentContact;
+        contactsFound.counter++;
         
     }
+
+    fclose(contactFile);
 
     return contactsFound;
 
 }
 
-int addNewContact(FILE* contactFile) {
-    
-    Contact newContact = {0};
-
+int addNewContact(char* contactFilePath) {
     char firstName[FIRST_NAME_MAX_LENGTH + 2] = ""; // + 2 to take into account the null terminator '\0' and '\n' for user input
     char lastName[LAST_NAME_MAX_LENGTH + 2] = "";
     char email[EMAIL_MAX_LENGTH + 2] = "";
@@ -286,19 +509,9 @@ int addNewContact(FILE* contactFile) {
     fgets(notes, sizeof(notes), stdin); // need fgets to accept white spaces.
     notes[strlen(notes) - 1] = '\0'; // removes \n that fgets adds at the end
 
-    strcpy(newContact.firstName, firstName);
-    strcpy(newContact.lastName, lastName);
-    strcpy(newContact.email, email);
-    strcpy(newContact.phone, phone);
-    strcpy(newContact.notes, notes);
+    Contact newContact = createContact(firstName, lastName, email, phone, notes);
 
-    fprintf(contactFile, "\n%s,%s,%s,%s,%s",
-        newContact.firstName,
-        newContact.lastName,
-        newContact.email,
-        newContact.phone,
-        newContact.notes
-    );
+    writeContactToFile(contactFilePath, newContact);
 
     printf("\nNew contact:\n");
     displayContact(newContact);
@@ -328,11 +541,9 @@ int displayContact(Contact contact) {
     return 0;
 }
 
-int displayAllContacts(FILE* contactFile) {
-
-    ContactArray allContacts = getAllContacts(contactFile);
-
-    printf("\n%d", allContacts.contactCounter);
+int displayAllContacts(char* contactFilePath) {
+    
+    ContactArray allContacts = getAllContacts(contactFilePath);
 
     if(allContacts.contacts == NULL) {
         printf("Couldn't retrieve contacts\n");
@@ -343,7 +554,7 @@ int displayAllContacts(FILE* contactFile) {
         return 1;
     }
     
-    for (int i = 0; i < allContacts.contactCounter; i++) {
+    for (int i = 0; i < allContacts.counter; i++) {
         
         printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
             allContacts.contacts[i].firstName,
@@ -362,7 +573,15 @@ int displayAllContacts(FILE* contactFile) {
     return 0;
 }
 
-ContactArray getAllContacts(FILE* contactFile) {
+ContactArray getAllContacts(char* contactFilePath) {
+    FILE* contactFile = fopen(contactFilePath, "r");
+
+    if (contactFile == NULL) {
+        printf("Could not open the file");
+        fclose(contactFile);
+        return (ContactArray){NULL,0};
+    }
+    
     rewind(contactFile); // reset file pointer to the beginning
 
 
@@ -379,6 +598,7 @@ ContactArray getAllContacts(FILE* contactFile) {
         if(temp == NULL) {
             
             printf("Memory reallocation failed!\n");
+            fclose(contactFile);
             return (ContactArray){0};
 
         } else {
@@ -394,6 +614,8 @@ ContactArray getAllContacts(FILE* contactFile) {
         contactCounter++;
         
     }
+
+    fclose(contactFile);
 
     return (ContactArray){contacts, contactCounter};
 }
