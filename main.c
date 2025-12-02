@@ -242,7 +242,7 @@ int main() {
 
             // displayAllContacts(contactFilePath);
 
-            // Contact contacToEdit = {"ell","south","ell@south.com","0422222222","hey"};
+            // Contact contacToEdit = {"ma","he","me@gm.com","0412345678","hey"};
 
             // editContact(contactFilePath, contacToEdit);
             
@@ -317,8 +317,15 @@ int writeContactToFile(char* contactFilePath, Contact contact) {
         fclose(contactFile);
         return 1;
     }
+
+    // if the file is empty (first contact entry), we do not add a \n at the start
+    fseek(contactFile, 0, SEEK_END);
+    long size = ftell(contactFile);
+    if(size > 0) {
+        fputs("\n", contactFile);
+    }
     
-    fprintf(contactFile, "\n%s,%s,%s,%s,%s",
+    fprintf(contactFile, "%s,%s,%s,%s,%s",
         contact.firstName,
         contact.lastName,
         contact.email,
@@ -333,21 +340,13 @@ int writeContactToFile(char* contactFilePath, Contact contact) {
 
 int deleteContactFromFile(char* contactFilePath, Contact contactToDelete) {
     char* tempFilePath = "temp.txt";
+    remove(tempFilePath); // Deletes potential already opened temp file
 
     FILE* contactFile = fopen(contactFilePath, "r");
-    FILE* tempFile = fopen(tempFilePath, "w");
 
     if (contactFile == NULL) {
         printf("Could not open the contcat file");
         fclose(contactFile);
-        fclose(tempFile);
-        return 1;
-    }
-
-    if (tempFile == NULL) {
-        printf("Could not open the temp file");
-        fclose(contactFile);
-        fclose(tempFile);
         return 1;
     }
 
@@ -366,16 +365,16 @@ int deleteContactFromFile(char* contactFilePath, Contact contactToDelete) {
         {
             continue;
         } else {
-            fputs(line, tempFile);
+            // fputs(line, tempFile);
+            writeContactToFile(tempFilePath, currentContact);
         }
 
     }
 
-    fclose(tempFile);
     fclose(contactFile);
 
     remove(contactFilePath); // Deletes the original file
-    rename(tempFilePath, contactFilePath); // Renames the temporary file
+    rename(tempFilePath, contactFilePath); // Renames the temporary file to the contact file
 
     return 0;
 }
@@ -470,8 +469,13 @@ int editContact(char* contactFilePath, Contact contactToEdit) {
 
     if(strcmp(newNotes, "") == 0) {
         strcpy(newNotes, oldNotes);
-        newNotes[strlen(newNotes) - 1] = '\0'; // removes \n that is at the end of the notes
     }
+
+    // strcpy(newFirstName, "ella");
+    // strcpy(newLastName, oldLastName);
+    // strcpy(newEmail, oldEmail);
+    // strcpy(newPhone, oldPhone);
+    // strcpy(newNotes, oldNotes);
 
     deleteContactFromFile(contactFilePath, contactToEdit);
 
@@ -654,23 +658,19 @@ int getContactFromLineInFile(Contact* contact, char* line) {
             continue;
         }
 
-        // add the current character to the right variable of contact
-        switch (columnCounter) {
-            case 0:
-                strncat(contact->firstName, &currentCharacter, 1);
-                break;
-            case 1:
-                strncat(contact->lastName, &currentCharacter, 1);
-                break;
-            case 2:
-                strncat(contact->email, &currentCharacter, 1);
-                break;
-            case 3:
-                strncat(contact->phone, &currentCharacter, 1);
-                break;
-            case 4:
+        // concatenate the current character to the right variable of contact
+        if (columnCounter == 0) {
+            strncat(contact->firstName, &currentCharacter, 1);
+        } else if (columnCounter == 1) {
+            strncat(contact->lastName, &currentCharacter, 1);
+        } else if (columnCounter == 2) {
+            strncat(contact->email, &currentCharacter, 1);
+        } else if (columnCounter == 3) {
+            strncat(contact->phone, &currentCharacter, 1);
+        } else if (columnCounter == 4) {
+            if(currentCharacter != '\n') {
                 strncat(contact->notes, &currentCharacter, 1);
-                break;
+            }
         }
         
         i++; // next character
