@@ -38,6 +38,8 @@ typedef struct {
  */
 int clearInputBuffer();
 
+
+
 /**
  * @brief   Displays all the contacts in the contact file
  *
@@ -57,6 +59,8 @@ int displayAllContacts(char* contactFilePath);
  * 
  */
 int displayContact(Contact contact);
+
+
 
 /**
  * @brief   Adds a new entry to the contact file
@@ -94,6 +98,8 @@ int deleteContactFromFile(char* contactFilePath, Contact contactToDelete);
  */
 int updateContactInFile(char* contactFilePath, Contact contactToEdit, Contact updatedContact);
 
+
+
 /**
  * @brief   Prompts the user for the infos on a new contact to add to the file,
  *          validate the inputs and write the contact to the file
@@ -114,6 +120,21 @@ int addNewContactPrompt(char* contactFilePath);
  * 
  */
 Contact updateContactPrompt(Contact contactToEdit);
+
+/**
+ * @brief   Prompts the user for some info about the contact they want to search for to retrieve it,
+ *          then sends it to findContact() that will return a ContactArray of all the contacts that
+ *          match the infos
+ *
+ * @param   contactFilePath Path to the contact file
+ *
+ * @return  ContactArray of the matching contacts
+ * 
+*/
+ContactArray contactSearchPrompt(char* contactFilePath);
+
+
+
 
 /**
  * @brief   Prompts the user for some info about the contact they want to edit to retrieve it,
@@ -142,17 +163,9 @@ int editContact(char* contactFilePath);
  */
 int searchContact(char* contactFilePath);
 
-/**
- * @brief   Prompts the user for some info about the contact they want to search for to retrieve it,
- *          then sends it to findContact() that will return a ContactArray of all the contacts that
- *          match the infos
- *
- * @param   contactFilePath Path to the contact file
- *
- * @return  ContactArray of the matching contacts
- * 
-*/
-ContactArray contactSearchPrompt(char* contactFilePath);
+int deleteContact(char* contactFilePath);
+
+
 
 /**
  * @brief   Transforms a line from the contact file into a Contact object
@@ -204,7 +217,6 @@ ContactArray findContacts(char* contactFilePath, char* firstNameSearch, char* la
  * @return  Contact
  * 
  */
-
 Contact createContact(char* firstName, char* lastName, char* email, char* phone, char* notes);
 
 bool isAnEmailAddress(char* email);
@@ -224,6 +236,8 @@ int main() {
         printf("1. Display all contacts\n");
         printf("2. Search for a contact\n");
         printf("3. Edit contact\n");
+        printf("4. Add new contact\n");
+        printf("5. Delete contact\n");
         printf("---------- Menu ----------\n\n");
 
         printf("Select an option: ");
@@ -231,7 +245,9 @@ int main() {
 
         if (choice == 1) {
             
+            printf("\n\n---- All the contacts in the contact book ----\n");
             displayAllContacts(contactFilePath);
+            printf("\n--------------------------------------------------\n");
 
         } else if (choice == 2) {
             
@@ -242,6 +258,16 @@ int main() {
 
             printf("\n\n---- Edit contact ----\n");
             editContact(contactFilePath);
+            
+        } else if (choice == 4) {
+
+            printf("\n\n---- Add a new contact ----\n");
+            addNewContactPrompt(contactFilePath);
+            
+        } else if (choice == 5) {
+
+            printf("\n\n---- Delete a contact ----\n");
+            deleteContact(contactFilePath);
             
         } else {
             clearInputBuffer();
@@ -661,6 +687,64 @@ int searchContact(char* contactFilePath) {
 
     free(contactsFound.contacts);
     contactsFound.contacts = NULL;
+}
+
+int deleteContact(char* contactFilePath) {
+    printf("Which contact would you like to delete?\n");
+
+    ContactArray contactsFound = contactSearchPrompt(contactFilePath);
+
+    if(contactsFound.counter == 0) {
+
+        printf("\nNo contacts found.\n\n");
+
+    } else if (contactsFound.counter == 1) {
+        Contact contactToDelete = contactsFound.contacts[0];
+        
+        printf("\n\n1 contact found:\n");
+        displayContact(contactToDelete);
+
+        char choice[5] = "";
+        clearInputBuffer();
+        printf("---------------------------------------------\n");
+        printf("Are you sure you want to delete (yes/no): ");
+        fgets(choice, sizeof(choice), stdin); // need fgets to accept white spaces.
+        printf("---------------------------------------------\n");
+        choice[strlen(choice) - 1] = '\0'; // removes \n that fgets adds at the end
+
+        if(strcmp(choice, "yes") == 0) {
+            deleteContactFromFile(contactFilePath, contactToDelete);
+
+            printf("\nContact successfully deleted\n");
+        } else {
+            printf("\nNo contact was deleted. Back to main menu.\n");
+        }
+
+    } else if (contactsFound.counter > 1) {
+
+        printf("\n\n%d contact%s found:\n", contactsFound.counter, contactsFound.counter > 1 ? "s" : "");
+        printf("Refine your search, please\n");
+        // TODO: display a menu the user can select from each contact found to edit this one (or 0 if they want to return to the main menu)
+        printf("--------------------------\n");
+
+        for (size_t i = 0; i < contactsFound.counter; i++)
+        {
+            displayContact(contactsFound.contacts[i]);
+        }
+        
+    } else {
+
+        printf("\n!!! ERROR please try again\n\n");
+        free(contactsFound.contacts);
+        contactsFound.contacts = NULL;
+        return 1;
+
+    }
+
+    free(contactsFound.contacts);
+    contactsFound.contacts = NULL;
+
+    return 0;
 }
 
 
