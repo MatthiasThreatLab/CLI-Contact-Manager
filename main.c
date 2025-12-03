@@ -639,7 +639,10 @@ int editContact(char* contactFilePath) {
 
     } else if (contactsFound.counter == 1) {
 
-        printf("\n\n1 contact found, please edit below:\n\n");
+        printf("\n\n1 contact found, please edit below\n\n");
+        printf("-----------------------\n");        
+        printf("Editing in progress\n");
+        printf("-----------------------\n\n");
         Contact contactToEdit = contactsFound.contacts[0];
         Contact updatedContact = updateContactPrompt(contactToEdit);
 
@@ -647,19 +650,60 @@ int editContact(char* contactFilePath) {
 
     } else if (contactsFound.counter > 1) {
 
-        printf("\n\n%d contact%s found:\n", contactsFound.counter, contactsFound.counter > 1 ? "s" : "");
-        printf("Refine your search, please\n");
-        // TODO: display a menu the user can select from each contact found to edit this one (or 0 if they want to return to the main menu)
-        printf("--------------------------\n");
+        printf("\n\n%d contacts found:\n", contactsFound.counter);
 
-        for (size_t i = 0; i < contactsFound.counter; i++)
-        {
+        printf("--------------------------\n");
+        for (size_t i = 0; i < contactsFound.counter; i++) {
+
+            printf("%d. ", i + 1);
             displayContact(contactsFound.contacts[i]);
         }
+        printf("--------------------------\n\n");
+        printf("Select a contact to edit (or 0 to go back to the main menu).\n");
+
+        int choice = 0;
+        printf("Select an option: ");
+        scanf(" %d", &choice);
+        printf("\n\n");
+
+        if(choice >= 0 && choice <= contactsFound.counter) {
+            if(choice == 0) {
+                printf("\nBack to main menu.\n\n");
+
+                free(contactsFound.contacts);
+                contactsFound.contacts = NULL;
+
+                return 0;
+            } else {
+                printf("\n\nPlease edit below\n\n");
+                printf("-----------------------\n");        
+                printf("Editing in progress\n");
+                printf("-----------------------\n\n");
+                
+                Contact contactToEdit = contactsFound.contacts[choice - 1];
+                Contact updatedContact = updateContactPrompt(contactToEdit);
+
+                updateContactInFile(contactFilePath, contactToEdit, updatedContact);
+            }
+        } else {
+
+            printf("\n!!! ERROR !!! Back to main menu.\n\n");
+
+            free(contactsFound.contacts);
+            contactsFound.contacts = NULL;
+
+            return 1;
+        }
+        
         
     } else {
 
-        printf("\n!!! ERROR please try again\n\n");
+        printf("\n!!! ERROR !!! Back to main menu.\n\n");
+
+        free(contactsFound.contacts);
+        contactsFound.contacts = NULL;
+
+        return 1;
 
     }
 
