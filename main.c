@@ -745,18 +745,18 @@ int deleteContact(char* contactFilePath) {
     } else if (contactsFound.counter == 1) {
         Contact contactToDelete = contactsFound.contacts[0];
         
-        printf("\n\n1 contact found:\n");
+        printf("\n\nContact that will be deleted:\n");
         displayContact(contactToDelete);
 
-        char choice[5] = "";
+        char userConfirmInput[5] = "";
         clearInputBuffer();
         printf("---------------------------------------------\n");
         printf("Are you sure you want to delete (yes/no): ");
-        fgets(choice, sizeof(choice), stdin); // need fgets to accept white spaces.
+        fgets(userConfirmInput, sizeof(userConfirmInput), stdin); // need fgets to accept white spaces.
         printf("---------------------------------------------\n");
-        choice[strlen(choice) - 1] = '\0'; // removes \n that fgets adds at the end
+        userConfirmInput[strlen(userConfirmInput) - 1] = '\0'; // removes \n that fgets adds at the end
 
-        if(strcmp(choice, "yes") == 0) {
+        if(strcmp(userConfirmInput, "yes") == 0) {
             deleteContactFromFile(contactFilePath, contactToDelete);
 
             printf("\nContact successfully deleted\n");
@@ -766,14 +766,60 @@ int deleteContact(char* contactFilePath) {
 
     } else if (contactsFound.counter > 1) {
 
-        printf("\n\n%d contact%s found:\n", contactsFound.counter, contactsFound.counter > 1 ? "s" : "");
-        printf("Refine your search, please\n");
-        // TODO: display a menu the user can select from each contact found to edit this one (or 0 if they want to return to the main menu)
-        printf("--------------------------\n");
+        printf("\n\n%d contacts found:\n", contactsFound.counter);
 
-        for (size_t i = 0; i < contactsFound.counter; i++)
-        {
+        printf("--------------------------\n");
+        for (size_t i = 0; i < contactsFound.counter; i++) {
+
+            printf("%d. ", i + 1);
             displayContact(contactsFound.contacts[i]);
+        }
+        printf("--------------------------\n\n");
+        printf("Select the contact that will be deleted (or 0 to go back to the main menu).\n");
+
+        int choice = 0;
+        printf("Select an option: ");
+        scanf(" %d", &choice);
+        printf("\n\n");
+
+        if(choice >= 0 && choice <= contactsFound.counter) {
+            if(choice == 0) {
+                printf("\nBack to main menu.\n\n");
+
+                free(contactsFound.contacts);
+                contactsFound.contacts = NULL;
+
+                return 0;
+            } else {
+                Contact contactToDelete = contactsFound.contacts[choice - 1];
+        
+                printf("\n\nContact that will be deleted:\n");
+                displayContact(contactToDelete);
+
+                char userConfirmInput[5] = "";
+                clearInputBuffer();
+                printf("---------------------------------------------\n");
+                printf("Are you sure you want to delete (yes/no): ");
+                fgets(userConfirmInput, sizeof(userConfirmInput), stdin); // need fgets to accept white spaces.
+                printf("---------------------------------------------\n");
+                userConfirmInput[strlen(userConfirmInput) - 1] = '\0'; // removes \n that fgets adds at the end
+
+                if(strcmp(userConfirmInput, "yes") == 0) {
+                    deleteContactFromFile(contactFilePath, contactToDelete);
+
+                    printf("\nContact successfully deleted\n");
+                } else {
+                    printf("\nNo contact was deleted. Back to main menu.\n");
+                }
+            }
+        } else {
+
+            printf("\n!!! ERROR !!! Back to main menu.\n\n");
+
+            free(contactsFound.contacts);
+            contactsFound.contacts = NULL;
+
+            return 1;
         }
         
     } else {
