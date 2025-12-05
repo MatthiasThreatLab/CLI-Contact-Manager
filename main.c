@@ -61,8 +61,9 @@ int displayAllContacts(char* contactFilePath);
  * @return  0 on completion
  * 
  */
-int displayContact(Contact contact);
+int displaySingleContact(Contact contact, char* displayTitle);
 
+int displayContacts(ContactArray contactsToDisplay, char* tableTitle);
 
 
 /**
@@ -250,16 +251,10 @@ int main() {
 
         if (choice == 1) {
             
-            printf("\n\n----------------------------------------------\n");
-            printf("---- All the contacts in the contact book ----\n");
-            printf("----------------------------------------------\n\n");
-
             status = displayAllContacts(contactFilePath);
             if(status == FAILURE) {
                 printf("An error has occured. Please try again");
             }
-
-            printf("\n----------------------------------------------\n");
 
         } else if (choice == 2) {
             
@@ -325,18 +320,7 @@ int displayAllContacts(char* contactFilePath) {
         return FAILURE;
     }
     
-    for (int i = 0; i < allContacts.counter; i++) {
-        
-        printf("%d. First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s",
-            i + 1,
-            allContacts.contacts[i].firstName,
-            allContacts.contacts[i].lastName,
-            allContacts.contacts[i].email,
-            allContacts.contacts[i].phone,
-            allContacts.contacts[i].notes
-        );
-        printf("\n");
-    }
+    displayContacts(allContacts, "CONTACT BOOK");
 
     free(allContacts.contacts);
     allContacts.contacts = NULL;
@@ -345,24 +329,293 @@ int displayAllContacts(char* contactFilePath) {
     return SUCCESS;
 }
 
-int displayContact(Contact contact) {
+int displaySingleContact(Contact contact, char* displayTitle) {
     
-    int charsPrinted = -1;
-    charsPrinted = printf("First name: %s | Last name: %s | Email: %s | Phone: %s | Notes: %s\n",
-        contact.firstName,
-        contact.lastName,
-        contact.email,
-        contact.phone,
-        contact.notes
-    );
-
-    if(charsPrinted < 0) {
-        return FAILURE;
-    }
+    displayContacts((ContactArray) {&contact, 1}, displayTitle);
 
     return SUCCESS;
 }
 
+int displayContacts(ContactArray contactsToDisplay, char* tableTitle) {
+    if(contactsToDisplay.counter < 0) {
+        return FAILURE;
+    }
+    
+    if(contactsToDisplay.counter == 0) {
+        return SUCCESS;
+    }
+
+    const char* titleFName = "   First Name   ";
+    const char* titleLName = "   Last Name   ";
+    const char* titleEmail = "   Email   ";
+    const char* titlePhone = "   Phone   ";
+    const char* titleNotes = "   Notes   ";
+
+    const int charLimitNotes = 70;
+    
+
+    char contactCounterString[20];
+    sprintf(contactCounterString, "%d", contactsToDisplay.counter + 1);
+    int maxCharID = strlen(contactCounterString);
+
+    // get the maximum characters we need for each column
+    // TODO: potentially divide notes in several lines
+    int maxCharFName = strlen(titleFName);
+    int maxCharLName = strlen(titleLName);
+    int maxCharEmail = strlen(titleEmail);
+    int maxCharPhone = strlen(titlePhone);
+    int maxCharNotes = strlen(titleNotes);
+
+    int nbCharFName = 0;
+    int nbCharLName = 0;
+    int nbCharEmail = 0;
+    int nbCharPhone = 0;
+    int nbCharNotes = 0;
+    
+    for(size_t i = 0; i < contactsToDisplay.counter; i++) {
+        nbCharFName = strlen(contactsToDisplay.contacts[i].firstName);
+        nbCharLName = strlen(contactsToDisplay.contacts[i].lastName);
+        nbCharEmail = strlen(contactsToDisplay.contacts[i].email);
+        nbCharPhone = strlen(contactsToDisplay.contacts[i].phone);
+        nbCharNotes = strlen(contactsToDisplay.contacts[i].notes);
+
+        if(nbCharFName > maxCharFName) {
+            maxCharFName = nbCharFName;
+        }
+        if(nbCharLName > maxCharLName) {
+            maxCharLName = nbCharLName;
+        }
+        if(nbCharEmail > maxCharEmail) {
+            maxCharEmail = nbCharEmail;
+        }
+        if(nbCharPhone > maxCharPhone) {
+            maxCharPhone = nbCharPhone;
+        }
+        if(nbCharNotes > maxCharNotes) {
+            maxCharNotes = nbCharNotes;
+        }
+    }
+
+    if(maxCharNotes > charLimitNotes) {
+        maxCharNotes = charLimitNotes;
+    }
+
+    int totalMaxChars = maxCharID + maxCharFName + maxCharLName + maxCharEmail + maxCharPhone + maxCharNotes;
+    int widthTable = totalMaxChars + NUMBER_OF_FIELDS_CONTACT_FILE*3 + 4;
+    
+    printf("\n\n");
+
+
+    
+    for(int j = 0; j < widthTable; j++) {
+        printf("-");
+    }
+    printf("\n");
+
+    printf("| ");
+    for(int k = 0; k < (widthTable - 4 - strlen(tableTitle))/2; k++) {
+        printf(" ");
+    }
+    printf("%s", tableTitle);
+    for(int k = 0; k < (widthTable - 4 - strlen(tableTitle))/2; k++) {
+        printf(" ");
+    }
+    if((widthTable - 4 - strlen(tableTitle))%2 != 0) {
+        printf(" ");
+    }
+    printf(" |\n");
+
+    for(int j = 0; j < widthTable; j++) {
+        printf("-");
+    }
+    printf("\n");
+
+
+
+
+    printf("|");
+    for(int j = 0; j < maxCharID + 1; j++) {
+        printf(" ");
+    }
+    printf(" | ");
+
+
+    for(int k = 0; k < (maxCharFName - strlen(titleFName))/2; k++) {
+        printf(" ");
+    }
+    printf("%s", titleFName);
+    for(int k = 0; k < (maxCharFName - strlen(titleFName))/2; k++) {
+        printf(" ");
+    }
+    if((maxCharFName - strlen(titleFName))%2 != 0) {
+        printf(" ");
+    }
+    printf(" | ");
+
+
+    for(int j = 0; j < (maxCharLName - strlen(titleLName))/2; j++) {
+        printf(" ");
+    }
+    printf("%s", titleLName);
+    for(int j = 0; j < (maxCharLName - strlen(titleLName))/2; j++) {
+        printf(" ");
+    }
+    if((maxCharLName - strlen(titleLName))%2 != 0) {
+        printf(" ");
+    }
+    printf(" | ");
+
+    
+    for(int j = 0; j < (maxCharEmail - strlen(titleEmail))/2; j++) {
+        printf(" ");
+    }
+    printf("%s", titleEmail);
+    for(int j = 0; j < (maxCharEmail - strlen(titleEmail))/2; j++) {
+        printf(" ");
+    }
+    if((maxCharEmail - strlen(titleEmail))%2 != 0) {
+        printf(" ");
+    }
+    printf(" | ");
+
+
+    for(int j = 0; j < (maxCharPhone - strlen(titlePhone))/2; j++) {
+        printf(" ");
+    }
+    printf("%s", titlePhone);
+    for(int j = 0; j < (maxCharPhone - strlen(titlePhone))/2; j++) {
+        printf(" ");
+    }
+    if((maxCharPhone - strlen(titlePhone))%2 != 0) {
+        printf(" ");
+    }
+    printf(" | ");
+
+
+    for(int j = 0; j < (maxCharNotes - strlen(titleNotes))/2; j++) {
+        printf(" ");
+    }
+    printf("%s", titleNotes);
+    for(int j = 0; j < (maxCharNotes - strlen(titleNotes))/2; j++) {
+        printf(" ");
+    }
+    if((maxCharNotes - strlen(titleNotes))%2 != 0) {
+        printf(" ");
+    }
+    printf(" |");
+
+
+    printf("\n");
+    for(int j = 0; j < widthTable; j++) {
+        printf("-");
+    }
+    printf("\n");
+
+    for(size_t i = 0; i < contactsToDisplay.counter; i++) {
+        char* firstName = contactsToDisplay.contacts[i].firstName;
+        char* lastName = contactsToDisplay.contacts[i].lastName;
+        char* email = contactsToDisplay.contacts[i].email;
+        char* phone = contactsToDisplay.contacts[i].phone;
+        char* notes = contactsToDisplay.contacts[i].notes;
+
+        char iAsString[20];
+        sprintf(iAsString, "%d", i + 1);
+
+        printf("| %d", i + 1);
+        for(int j = 0; j < maxCharID - strlen(iAsString); j++) {
+            printf(" ");
+        }
+        printf(" | ");
+
+        printf("%s", firstName);
+        for(int j = 0; j < maxCharFName - strlen(firstName); j++) {
+            printf(" ");
+        }
+        printf(" | ");
+
+        printf("%s", lastName);
+        for(int j = 0; j < maxCharLName - strlen(lastName); j++) {
+            printf(" ");
+        }
+        printf(" | ");
+
+        printf("%s", email);
+        for(int j = 0; j < maxCharEmail - strlen(email); j++) {
+            printf(" ");
+        }
+        printf(" | ");
+
+        printf("%s", phone);
+        for(int j = 0; j < maxCharPhone - strlen(phone); j++) {
+            printf(" ");
+        }
+        printf(" | ");
+
+
+        int len = strlen(notes);
+        if(maxCharNotes - len >= 0) {
+            printf("%s", notes);
+            for(int j = 0; j < maxCharNotes - strlen(notes); j++) {
+                printf(" ");
+            }
+            printf(" |");
+        } else {
+            int linesNeeded = len%maxCharNotes == 0 ? strlen(notes)/maxCharNotes : strlen(notes)/maxCharNotes + 1;
+
+            printf("%.*s |", maxCharNotes, notes);
+            for (int j = 1; j < linesNeeded; j++)
+            {
+                printf("\n| ");
+                for(int j = 0; j < maxCharID; j++) {
+                    printf(" ");
+                }
+                printf(" | ");
+
+                for(int j = 0; j < maxCharFName; j++) {
+                    printf(" ");
+                }
+                printf(" | ");
+
+                for(int j = 0; j < maxCharLName; j++) {
+                    printf(" ");
+                }
+                printf(" | ");
+
+                for(int j = 0; j < maxCharEmail; j++) {
+                    printf(" ");
+                }
+                printf(" | ");
+
+                for(int j = 0; j < maxCharPhone; j++) {
+                    printf(" ");
+                }
+                printf(" | ");
+                
+                printf("%.*s", maxCharNotes, notes + j*maxCharNotes);
+                if(len%maxCharNotes != 0 && j == linesNeeded - 1) {
+                    for(int j = 0; j < charLimitNotes - len%maxCharNotes; j++) {
+                        printf(" ");
+                    }
+                }
+
+                printf(" |");
+            }
+            
+        }
+        
+
+        printf("\n");
+        for(int j = 0; j < widthTable; j++) {
+            printf("-");
+        }
+        printf("\n");
+
+    }
+
+    printf("\n");
+
+    return SUCCESS;
+}
 
 
 int writeContactToFile(char* contactFilePath, Contact contact) {
@@ -456,11 +709,8 @@ int updateContactInFile(char* contactFilePath, Contact contactToEdit, Contact up
         return FAILURE;
     }
 
-    printf("\n----------------------------------------------\n");
-    printf("Updated contact\n");
-    printf("----------------------------------------------\n");
-    status = displayContact(updatedContact);
-    printf("----------------------------------------------\n");
+    status = displaySingleContact(updatedContact, "CONTACT UPDATED SUCCESSFULLY");
+    
     if(status == FAILURE) {
         return FAILURE;
     }
@@ -615,8 +865,7 @@ int addNewContactPrompt(char* contactFilePath) {
         return FAILURE;
     }
 
-    printf("\nNew contact:\n");
-    status = displayContact(newContact);
+    status = displaySingleContact(newContact, "CONTACT ADDED SUCCESSFULLY");
 
     if(status == FAILURE) {
         return FAILURE;
@@ -698,15 +947,15 @@ int editContact(char* contactFilePath) {
 
     if(contactsFound.counter == 0) {
 
-        printf("\nNo contacts found.\n\n");
+        printf("\n\n-------------------------------------\n");
+        printf("No contacts found.\n");
+        printf("-------------------------------------\n");
 
     } else if (contactsFound.counter == 1) {
 
-        printf("\n\n1 contact found, please edit below\n\n");
-        printf("-----------------------\n");        
-        printf("Editing in progress\n");
-        printf("-----------------------\n\n");
         Contact contactToEdit = contactsFound.contacts[0];
+        displaySingleContact(contactToEdit, "CURRENTLY EDITING");
+
         Contact updatedContact = updateContactPrompt(contactToEdit);
 
         status = updateContactInFile(contactFilePath, contactToEdit, updatedContact);
@@ -716,25 +965,17 @@ int editContact(char* contactFilePath) {
 
     } else if (contactsFound.counter > 1) {
 
-        printf("\n\n%d contacts found:\n", contactsFound.counter);
+        status = displayContacts(contactsFound, "CONTACTS MATCHING SEARCH");
 
-        printf("--------------------------\n");
-        for (size_t i = 0; i < contactsFound.counter; i++) {
-
-            printf("%d. ", i + 1);
-            status = displayContact(contactsFound.contacts[i]);
-
-            if(status == FAILURE) {
-                return FAILURE;
-            }
+        if(status == FAILURE) {
+            return FAILURE;
         }
-        printf("--------------------------\n\n");
+        
         printf("Select a contact to edit (or 0 to go back to the main menu).\n");
 
         int choice = 0;
-        printf("Select an option: ");
+        printf("Contact ID: ");
         scanf(" %d", &choice);
-        printf("\n\n");
 
         if(choice >= 0 && choice <= contactsFound.counter) {
             if(choice == 0) {
@@ -745,12 +986,10 @@ int editContact(char* contactFilePath) {
 
                 return SUCCESS;
             } else {
-                printf("\n\nPlease edit below\n\n");
-                printf("-----------------------\n");        
-                printf("Editing in progress\n");
-                printf("-----------------------\n\n");
-                
                 Contact contactToEdit = contactsFound.contacts[choice - 1];
+
+                displaySingleContact(contactToEdit, "CURRENTLY EDITING");
+
                 Contact updatedContact = updateContactPrompt(contactToEdit);
 
                 status = updateContactInFile(contactFilePath, contactToEdit, updatedContact);
@@ -797,20 +1036,11 @@ int searchContact(char* contactFilePath) {
         printf("No contacts found.\n");
         printf("-------------------------------------\n");
     } else if(contactsFound.counter > 0) {
-        printf("\n\n-------------------------------------\n");
-        printf("%d contact%s found:\n", contactsFound.counter, contactsFound.counter > 1 ? "s" : "");
-        printf("-------------------------------------\n\n");
-
-        for (size_t i = 0; i < contactsFound.counter; i++) {
-            printf("%d. ", i+1);
-            
-            status = displayContact(contactsFound.contacts[i]);
-            if(status == FAILURE) {
-                return FAILURE;
-            }
+        
+        status = displayContacts(contactsFound, "CONTACTS MATCHING SEARCH");
+        if(status == FAILURE) {
+            return FAILURE;
         }
-
-        printf("\n-------------------------------------\n");
         
     } else {
         printf("!!! ERROR retrieving contacts. Please try again !!!");
@@ -832,13 +1062,14 @@ int deleteContact(char* contactFilePath) {
 
     if(contactsFound.counter == 0) {
 
-        printf("\nNo contacts found.\n\n");
+        printf("\n---------------------------------------------");
+        printf("\nNo contacts found.\n");
+        printf("---------------------------------------------\n");
 
     } else if (contactsFound.counter == 1) {
         Contact contactToDelete = contactsFound.contacts[0];
         
-        printf("\n\nContact that will be deleted:\n");
-        status = displayContact(contactToDelete);
+        status = displaySingleContact(contactToDelete, "DELETE THIS CONTACT?");
 
         if(status == FAILURE) {
             return FAILURE;
@@ -858,31 +1089,24 @@ int deleteContact(char* contactFilePath) {
                 return FAILURE;
             }
 
+            printf("\n---------------------------------------------");
             printf("\nContact successfully deleted\n");
+            printf("---------------------------------------------\n");
         } else {
+            printf("\n---------------------------------------------");
             printf("\nNo contact was deleted. Back to main menu.\n");
+            printf("---------------------------------------------\n");
         }
 
     } else if (contactsFound.counter > 1) {
 
-        printf("\n\n%d contacts found:\n", contactsFound.counter);
+        displayContacts(contactsFound, "CONTACTS MATCHING SEARCH");
 
-        printf("--------------------------\n");
-        for (size_t i = 0; i < contactsFound.counter; i++) {
-
-            printf("%d. ", i + 1);
-            status = displayContact(contactsFound.contacts[i]);
-            if(status == FAILURE) {
-                return FAILURE;
-            }
-        }
-        printf("--------------------------\n\n");
-        printf("Select the contact that will be deleted (or 0 to go back to the main menu).\n");
+        printf("\nSelect the contact that will be deleted (or 0 to go back to the main menu).\n");
 
         int choice = 0;
-        printf("Select an option: ");
+        printf("Contact ID: ");
         scanf(" %d", &choice);
-        printf("\n\n");
 
         if(choice >= 0 && choice <= contactsFound.counter) {
             if(choice == 0) {
@@ -891,12 +1115,11 @@ int deleteContact(char* contactFilePath) {
                 free(contactsFound.contacts);
                 contactsFound.contacts = NULL;
 
-                return FAILURE;
+                return SUCCESS;
             } else {
                 Contact contactToDelete = contactsFound.contacts[choice - 1];
         
-                printf("\n\nContact that will be deleted:\n");
-                status = displayContact(contactToDelete);
+                status = displaySingleContact(contactToDelete, "DELETE THIS CONTACT?");
                 if(status == FAILURE) {
                     return FAILURE;
                 }
@@ -915,9 +1138,14 @@ int deleteContact(char* contactFilePath) {
                         return FAILURE;
                     }
 
+                    printf("\n---------------------------------------------");
                     printf("\nContact successfully deleted\n");
+                    printf("---------------------------------------------\n");
+
                 } else {
+                    printf("\n---------------------------------------------");
                     printf("\nNo contact was deleted. Back to main menu.\n");
+                    printf("---------------------------------------------\n");
                 }
             }
         } else {
