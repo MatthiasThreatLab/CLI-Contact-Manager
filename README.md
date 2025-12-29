@@ -11,22 +11,15 @@ _Will be filled in at the end of the project_
 
 ## 🧰 Tech Used
 - **Language**: C
-- **APIs / Libraries**: 
-- **Tools**:
+- **APIs / Libraries**:
+    - <stdio.h>
+    - <string.h>
+    - <stdlib.h>
+    - <stdbool.h>
+    - <ctype.h>
 
-# Progress Log
-### Step 1 — [Date]  
-**Objective:**  
-What are you trying to do today?
-
-**What I Did:**  
-- 
-
-**Challenges:**  
+# Challenges:
 - Understand how excatly fgets() reads a file, what if the the current line is bigger than the buffer, will I lose information? Probably
 - usage of strtok, to properly read through each line of the database
 - buffer overflow when using strncat()
 - wanted to use regex to valid user input but there is no cross-platform library to do so, so I had to do it manually.
-
-**Solutions / Insights:**  
--
